@@ -28,7 +28,18 @@ def _applicants(text):
 
 
 def _search(keyword, params, window_secs):
-    q = {"keywords": keyword, "f_TPR": f"r{window_secs}", "sortBy": "DD", "start": 0, **params}
+    """Every result page (10 cards each) within the window. A generator, so cards from
+    earlier pages are kept if a later page gets rate limited."""
+    for start in range(0, CFG["linkedin_max_results_per_keyword"], 10):
+        page = _search_page(keyword, params, window_secs, start)
+        yield from page
+        if len(page) < 10:
+            break
+        time.sleep(1.5)
+
+
+def _search_page(keyword, params, window_secs, start):
+    q = {"keywords": keyword, "f_TPR": f"r{window_secs}", "sortBy": "DD", "start": start, **params}
     page = http_get(SEARCH + "?" + urllib.parse.urlencode(q))
     cards = []
     for chunk in page.split("<li")[1:]:
@@ -76,7 +87,11 @@ def fetch(seen, last_run):
 
 
 def _details(jobs, seen):
-    for job in jobs[:CFG["linkedin_max_details_per_run"]]:
+    # Newest first get details; any beyond the cap still go out, just without applicant counts.
+    jobs = sorted(jobs, key=lambda j: j["posted_at"] or now(), reverse=True)
+    cap = CFG["linkedin_max_details_per_run"]
+    yield from jobs[cap:]
+    for job in jobs[:cap]:
         try:
             d = http_get(DETAIL.format(job["id"].split(":")[1]))
         except Exception as e:

@@ -34,8 +34,6 @@
       "front-end designer"
     ],
     "exclude": [
-      "senior",
-      "sr",
       "staff",
       "lead",
       "principal",
@@ -97,7 +95,12 @@
       "automation",
       "technician",
       "draftsman",
-      "draughtsman"
+      "draughtsman",
+      "trainer",
+      "faculty",
+      "teacher",
+      "learning experience",
+      "instructional"
     ],
     "design_signals": [
       "figma",
@@ -209,14 +212,19 @@
   },
   "search_keywords": [
     "ui ux designer",
+    "ux designer",
+    "ui designer",
     "product designer",
     "visual designer",
-    "design engineer",
+    "interaction designer",
+    "web designer",
+    "figma",
     "ux engineer",
     "design technologist"
   ],
-  "naukri_max_details_per_run": 12,
-  "linkedin_max_details_per_run": 25,
+  "naukri_max_details_per_run": 25,
+  "linkedin_max_details_per_run": 60,
+  "linkedin_max_results_per_keyword": 200,
   "companies": {
     "greenhouse": [
       "groww",
@@ -252,7 +260,9 @@
       "mercury",
       "calendly",
       "elastic",
-      "vercel"
+      "vercel",
+      "truecaller",
+      "observeai"
     ],
     "lever": [
       "cred",
@@ -263,7 +273,8 @@
       "mindtickle",
       "epifi",
       "spotify",
-      "palantir"
+      "palantir",
+      "paytm"
     ],
     "ashby": [
       "navi",
@@ -281,7 +292,13 @@
       "zapier",
       "lovable",
       "elevenlabs",
-      "miro"
+      "miro",
+      "sarvam"
+    ],
+    "smartrecruiters": [
+      "swiggy",
+      "freshworks",
+      "canva"
     ]
   },
   "naukri_pages_per_keyword": 3,

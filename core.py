@@ -349,10 +349,12 @@ def format_alert(job):
 
 def process(jobs, seen, label, platforms):
     """Filter, then send every new matching role as its own card."""
-    fresh, reasons = [], {}
+    fresh, reasons, batch = [], {}, set()
     for job in jobs:
-        if seen.has(job):
+        # The same role is often posted once per city; alert it once.
+        if seen.has(job) or norm_key(job) in batch:
             continue
+        batch.add(norm_key(job))
         r = reject_reason(fill_experience(job))
         if r:
             reasons[r] = reasons.get(r, 0) + 1

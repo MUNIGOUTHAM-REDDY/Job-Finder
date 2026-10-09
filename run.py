@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Run one check.
 
-  python run.py --mac        LinkedIn + Naukri (on your Mac, every 10 min)
-  python run.py --cloud      company career sites + remote boards (GitHub Actions)
+  python run.py --mac        LinkedIn + Naukri (on your Mac, every 10 min, slower at night)
+  python run.py --feeds      LinkedIn + Naukri (GitHub Actions, around the clock)
+  python run.py --cloud      company career sites + remote boards (GitHub Actions, around the clock)
   python run.py --test       send a sample alert to Telegram
 """
 import sys
@@ -13,8 +14,10 @@ from core import CFG, HERE, Seen, format_alert, load_env, log, new_job, now, pro
 IST = timezone(timedelta(hours=5, minutes=30))
 
 
-def quiet_hours_skip(seen):
+def quiet_hours_skip(seen, night_mode=True):
     """At night, check only every few hours. Returns True if this run should be skipped."""
+    if not night_mode:
+        return False
     q = CFG["night"]
     hour = now().astimezone(IST).hour
     night = hour >= q["start_hour"] or hour < q["end_hour"]
@@ -28,16 +31,17 @@ def quiet_hours_skip(seen):
 def company_platforms():
     companies = sum(len(v) for v in CFG["companies"].values())
     return [(f"Company career sites ({companies} companies)", "company site", ""),
-            ("Remotive", "Remotive", ""), ("RemoteOK", "RemoteOK", "")]
+            ("Remotive", "Remotive", ""), ("RemoteOK", "RemoteOK", ""), ("Hirist", "Hirist", ""),
+            ("Foundit", "Foundit", ""), ("Cutshort", "Cutshort", ""), ("Wellfound", "Wellfound", "")]
 
 
-def mac():
-    """LinkedIn + Naukri. Company sites run in the cloud (cloud())."""
+def feeds(state="seen-mac.json", night_mode=True):
+    """LinkedIn + Naukri, on the Mac (mac) or GitHub Actions (--feeds)."""
     import src_linkedin
     import src_naukri
 
-    seen = Seen(HERE / "state" / "seen-mac.json")
-    if quiet_hours_skip(seen):
+    seen = Seen(HERE / "state" / state)
+    if quiet_hours_skip(seen, night_mode):
         return
     last = seen.meta.get("linkedin_last_run")
     li_jobs, ok = src_linkedin.fetch(seen, datetime.fromisoformat(last) if last else None)
@@ -58,7 +62,7 @@ def cloud():
     import src_ats
 
     seen = Seen(HERE / "state" / "seen-cloud.json")
-    if quiet_hours_skip(seen):
+    if quiet_hours_skip(seen, night_mode=False):
         return
     process(src_ats.fetch(), seen, "company sites", company_platforms())
 
@@ -74,4 +78,5 @@ def test():
 
 if __name__ == "__main__":
     load_env()
-    {"--mac": mac, "--cloud": cloud, "--test": test}.get(next(iter(sys.argv[1:]), ""), lambda: print(__doc__))()
+    {"--mac": feeds, "--feeds": lambda: feeds("seen-feeds.json", night_mode=False),
+     "--cloud": cloud, "--test": test}.get(next(iter(sys.argv[1:]), ""), lambda: print(__doc__))()

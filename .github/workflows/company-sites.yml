@@ -24,4 +24,7 @@ jobs:
           git config user.name "job-finder-bot"
           git config user.email "job-finder-bot@users.noreply.github.com"
           git add state/seen-cloud.json
-          git diff --cached --quiet || (git commit -m "Update seen jobs" && git push)
+          git diff --cached --quiet && exit 0
+          git commit -m "Update seen jobs"
+          for i in 1 2 3; do git pull --rebase -q && git push -q && exit 0; sleep 5; done
+          exit 1

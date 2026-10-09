@@ -2,6 +2,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
+import src_boards
 from core import CFG, http_json, location_ok, log, new_job, strip_html, title_ok, usd_to_lpa
 
 
@@ -49,6 +50,34 @@ def ashby(slug):
     return out
 
 
+def smartrecruiters(slug):
+    base = f"https://api.smartrecruiters.com/v1/companies/{slug}/postings"
+    out, offset = [], 0
+    while True:
+        data = http_json(f"{base}?limit=100&offset={offset}")
+        for j in data.get("content", []):
+            loc = j.get("location") or {}
+            country = "India" if loc.get("country") == "in" else (loc.get("country") or "").upper()
+            place = ", ".join(x for x in (loc.get("city"), country) if x)
+            if loc.get("remote"):
+                place += " (Remote)"
+            out.append(new_job(id=f"sr:{slug}:{j['id']}", source="company site", title=j["name"],
+                               company=(j.get("company") or {}).get("name") or slug.title(),
+                               location=place,
+                               url=f"https://jobs.smartrecruiters.com/{slug}/{j['id']}",
+                               posted_at=_ts(j.get("releasedDate"))))
+        offset += 100
+        if offset >= data.get("totalFound", 0):
+            break
+    # The list has no descriptions; fetch them only for titles that could match.
+    for job in out:
+        if title_ok(job["title"]):
+            d = http_json(f"{base}/{job['id'].split(':')[2]}")
+            sections = (d.get("jobAd") or {}).get("sections") or {}
+            job["description"] = strip_html(" ".join((v or {}).get("text", "") for v in sections.values()))
+    return out
+
+
 def remotive(_):
     data = http_json("https://remotive.com/api/remote-jobs?category=design")
     return [new_job(id=f"rm:{j['id']}", source="Remotive", title=j["title"], company=j.get("company_name", ""),
@@ -74,12 +103,12 @@ def remoteok(_):
     return out
 
 
-FETCHERS = {"greenhouse": greenhouse, "lever": lever, "ashby": ashby}
+FETCHERS = {"greenhouse": greenhouse, "lever": lever, "ashby": ashby, "smartrecruiters": smartrecruiters}
 
 
 def fetch():
     tasks = [(FETCHERS[k], s) for k in FETCHERS for s in CFG["companies"].get(k, [])]
-    tasks += [(remotive, None), (remoteok, None)]
+    tasks += [(remotive, None), (remoteok, None)] + [(fn, None) for fn in src_boards.FETCHERS]
 
     def run(t):
         fn, slug = t

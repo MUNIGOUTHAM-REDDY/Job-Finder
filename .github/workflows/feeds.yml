@@ -1,0 +1,34 @@
+name: LinkedIn + Naukri check
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: job-finder-feeds
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: .github/workflows/feeds.yml
+      - run: pip install playwright==1.55.0 && playwright install --with-deps chrome
+      # Naukri needs a real (non-headless) Chrome window, so give it a virtual screen.
+      - run: xvfb-run -a python run.py --feeds
+        env:
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+      - name: Save seen jobs
+        run: |
+          git config user.name "job-finder-bot"
+          git config user.email "job-finder-bot@users.noreply.github.com"
+          git add state/seen-feeds.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Update seen jobs (LinkedIn + Naukri)"
+          for i in 1 2 3; do git pull --rebase -q && git push -q && exit 0; sleep 5; done
+          exit 1
