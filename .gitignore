@@ -1,0 +1,6 @@
+.env
+.venv/
+.chrome-profile/
+logs/
+state/seen-mac.json
+__pycache__/

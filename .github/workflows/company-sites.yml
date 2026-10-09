@@ -1,0 +1,27 @@
+name: Company sites check
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: job-finder
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python run.py --cloud
+        env:
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+      - name: Save seen jobs
+        run: |
+          git config user.name "job-finder-bot"
+          git config user.email "job-finder-bot@users.noreply.github.com"
+          git add state/seen-cloud.json
+          git diff --cached --quiet || (git commit -m "Update seen jobs" && git push)
