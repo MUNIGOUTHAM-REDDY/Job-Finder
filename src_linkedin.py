@@ -5,13 +5,13 @@ import time
 import urllib.error
 import urllib.parse
 
-from core import CFG, http_get, location_ok, log, new_job, now, parse_relative, strip_html, title_ok
+from core import CFG, http_get, location_ok, log, new_job, now, parse_relative, strip_html, title_ok, usd_to_lpa
 
 SEARCH = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search"
 DETAIL = "https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/{}"
-# India-wide (includes remote-in-India roles). Worldwide remote on LinkedIn is mostly
-# US/EU-only, so remote-anywhere roles come from the remote boards instead.
-PLACES = [("India", {"location": "India"})]
+# Country-wide searches (they include remote-in-that-country roles). Worldwide remote on LinkedIn
+# is mostly US/EU-only, so remote-anywhere roles come from the remote boards instead.
+PLACES = [("India", {"location": "India"}), ("Germany", {"location": "Germany"})]
 
 
 def _g(pattern, s):
@@ -117,5 +117,8 @@ def _details(jobs, seen):
             vals = [float(x.replace(",", "")) for x in m]
             vals = [v / 1e5 if v > 1000 else v for v in vals]  # rupees -> lakh
             job["salary_min_lpa"], job["salary_max_lpa"] = min(vals), max(vals)
+        eur = [float(x.replace(",", "")) for x in re.findall(r"€\s?([\d,]+(?:\.\d+)?)\s*/yr", job["salary_text"])]
+        if eur:
+            job["salary_min_lpa"], job["salary_max_lpa"] = usd_to_lpa(min(eur), "EUR"), usd_to_lpa(max(eur), "EUR")
         time.sleep(1)
         yield job

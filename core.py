@@ -43,8 +43,8 @@ def http_get(url, timeout=20, headers=None):
         return r.read().decode("utf-8", "replace")
 
 
-def http_json(url, timeout=20):
-    return json.loads(http_get(url, timeout, {"Accept": "application/json"}))
+def http_json(url, timeout=20, headers=None):
+    return json.loads(http_get(url, timeout, {"Accept": "application/json", **(headers or {})}))
 
 
 def strip_html(s):
@@ -310,6 +310,30 @@ def _salary(job):
     return rng + f" (₹{(lo or hi) * 1e5 / 12 / 1000:.0f}k–{hi * 1e5 / 12 / 1000:.0f}k/mo)"
 
 
+GERMAN_REQUIRED = re.compile(
+    r"(fluent|native|business|excellent|very good|strong|proficien\w*)\W+(?:\w+\W+){0,3}german\b"
+    r"|\bgerman\W+(?:\w+\W+){0,3}(c1|c2|b2|fluent|native|required|mandatory|is a must)"
+    r"|deutschkenntnisse|flie(ß|ss)ende\w* deutsch|sehr gute\w* deutsch", re.I)
+GERMAN_WORDS = re.compile(r"\b(und|wir|die|der|das|für|mit|sie|ihre|bei|uns)\b", re.I)
+NO_VISA = re.compile(r"(not|unable to|cannot|can't|don't|do not)\s+(\w+\s+){0,3}sponsor|no visa sponsorship", re.I)
+VISA = re.compile(r"visa sponsor|sponsor(ship)?\s+(a\s+|your\s+)?(visa|work permit)|relocation (support|assistance|package|budget)"
+                  r"|blue card|we (can|will) sponsor", re.I)
+
+
+def abroad_notes(job):
+    """Language and visa hints, mainly for jobs in Germany."""
+    text, notes = job["description"], []
+    if GERMAN_REQUIRED.search(text):
+        notes.append("German required")
+    elif len(GERMAN_WORDS.findall(text)) > 15:
+        notes.append("Job ad is in German")
+    if NO_VISA.search(text):
+        notes.append("No visa sponsorship")
+    elif VISA.search(text):
+        notes.append("Visa / relocation support mentioned")
+    return notes
+
+
 def format_alert(job):
     """One role as a compact card. Minimal icons: one per line, tier dot on top."""
     e = lambda s: html.escape(str(s or ""))
@@ -332,6 +356,8 @@ def format_alert(job):
              f"🕒  {e('  ·  '.join(stats))}",
              f"💼  {e('  ·  '.join(role))}",
              f"🏢  {e('  ·  '.join(company))}"]
+    if abroad_notes(job):
+        lines.append(f"🌍  {e('  ·  '.join(abroad_notes(job)))}")
     if job["company_address"] and job["company_address"].lower() not in job["location"].lower():
         lines.append(f"📍  {e(job['company_address'][:110])}")
     contact = c.get("emails", []) + c.get("phones", [])

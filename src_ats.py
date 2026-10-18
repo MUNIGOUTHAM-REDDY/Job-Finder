@@ -1,9 +1,10 @@
-"""Company careers pages (Greenhouse, Lever, Ashby) and remote job boards."""
+"""Company careers pages (Greenhouse, Lever, Ashby, SmartRecruiters, Personio) and remote job boards."""
+import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
 import src_boards
-from core import CFG, http_json, location_ok, log, new_job, strip_html, title_ok, usd_to_lpa
+from core import CFG, http_get, http_json, location_ok, log, new_job, strip_html, title_ok, usd_to_lpa
 
 
 def _ts(v):
@@ -78,6 +79,25 @@ def smartrecruiters(slug):
     return out
 
 
+def personio(slug):
+    """Personio (common with German companies) publishes every open role as one XML feed."""
+    root = ET.fromstring(http_get(f"https://{slug}.jobs.personio.de/xml?language=en"))
+    out = []
+    for p in root.iter("position"):
+        t = lambda tag: (p.findtext(tag) or "").strip()
+        years = t("yearsOfExperience")  # "lt-1", "1-2", "2-5", "5-7", "7-10", "gt-10"
+        lo, _, hi = years.replace("lt-", "0-").replace("gt-", "").partition("-")
+        offices = [t("office")] + [(o.text or "").strip() for o in p.iter("location")]
+        out.append(new_job(id=f"ps:{slug}:{t('id')}", source="company site", title=t("name"),
+                           company=t("subcompany") or slug.title(), location=", ".join(o for o in offices if o),
+                           url=f"https://{slug}.jobs.personio.de/job/{t('id')}?language=en",
+                           posted_at=_ts(t("createdAt")),
+                           exp_min=int(lo) if lo.isdigit() else None, exp_max=int(hi) if hi.isdigit() else None,
+                           exp_text=f"{years.replace('lt-1', '0-1')} yrs" if years else "",
+                           description=strip_html(" ".join(v.text or "" for v in p.iter("value")))))
+    return out
+
+
 def remotive(_):
     data = http_json("https://remotive.com/api/remote-jobs?category=design")
     return [new_job(id=f"rm:{j['id']}", source="Remotive", title=j["title"], company=j.get("company_name", ""),
@@ -103,7 +123,8 @@ def remoteok(_):
     return out
 
 
-FETCHERS = {"greenhouse": greenhouse, "lever": lever, "ashby": ashby, "smartrecruiters": smartrecruiters}
+FETCHERS = {"greenhouse": greenhouse, "lever": lever, "ashby": ashby, "smartrecruiters": smartrecruiters,
+            "personio": personio}
 
 
 def fetch():
@@ -112,11 +133,13 @@ def fetch():
 
     def run(t):
         fn, slug = t
-        try:
-            return fn(slug)
-        except Exception as e:
-            log(f"  {fn.__name__}:{slug} failed: {e}")
-            return []
+        for attempt in (1, 2):  # one retry: with ~130 sources in parallel, a slow reply is common
+            try:
+                return fn(slug)
+            except Exception as e:
+                if attempt == 2:
+                    log(f"  {fn.__name__}:{slug} failed: {e}")
+        return []
 
     jobs = []
     with ThreadPoolExecutor(max_workers=12) as ex:

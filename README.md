@@ -1,6 +1,6 @@
 # Job Finder
 
-Job Finder sends a Telegram message within minutes of a new design job being posted, so you can apply before the applicant pile grows. It looks for UI/UX, product, visual, interaction and design-engineering roles in India, plus remote roles open to India. It skips roles that are too senior, too old, underpaid or already crowded.
+Job Finder sends a Telegram message within minutes of a new design job being posted, so you can apply before the applicant pile grows. It looks for UI/UX, product, visual, interaction and design-engineering roles in India and Germany, plus remote roles open to India. It skips roles that are too senior, too old, underpaid or already crowded.
 
 It runs for free on GitHub Actions, around the clock. Your computer doesn't need to be on.
 
@@ -39,6 +39,7 @@ View on Naukri →   Recruiter  ·  Design manager
   - 🟡 last 6 hours, under 50 applicants
   - ⚪ last 24 hours, under 100 applicants
 - **Contact details** come from the job post or the company's website, when it can find them.
+- **🌍 line**, mainly for jobs in Germany: says when the post asks for German (or is written in German), and whether it mentions visa sponsorship or relocation support, or rules sponsorship out. It's read from the job description, so it's missing when a site gives no description.
 - **Recruiter** and **Design manager** open a LinkedIn people search at that company, so you can message someone directly.
 - **Quiet check-ins.** When a check finds nothing new, you get a silent message (no sound) such as "No new matching roles · 10:40 PM", with how many roles each site returned. This tells you the bot is still running.
 
@@ -50,8 +51,8 @@ Two checks run on GitHub Actions:
 
 | Check | Sites | How often |
 |---|---|---|
-| **LinkedIn + Naukri** | LinkedIn (public job search, no login) and Naukri (opened in a real Chrome browser, because Naukri blocks simple scripts) | every 10 min |
-| **Company sites** | Careers pages of about 65 companies (Greenhouse, Lever, Ashby, SmartRecruiters), plus Hirist, Cutshort, Wellfound, Foundit, Remotive and RemoteOK | every 15 min |
+| **LinkedIn + Naukri** | LinkedIn (public job search in India and Germany, no login) and Naukri (India) (opened in a real Chrome browser, because Naukri blocks simple scripts) | every 10 min |
+| **Company sites** | Careers pages of about 120 Indian, German and global companies (Greenhouse, Lever, Ashby, SmartRecruiters, Personio), plus Hirist, Cutshort, Wellfound, Foundit (India), the Bundesagentur für Arbeit job board (Germany), Remotive and RemoteOK | every 15 min |
 
 Each check:
 
@@ -149,7 +150,7 @@ Words match as whole words. `ux` matches "UX Designer" but not "Luxury".
 
 ### Places: `locations`
 
-- `allow`: a job passes if its location contains one of these (`india`, city names, `anywhere`, …).
+- `allow`: a job passes if its location contains one of these (`india`, `germany`, city names, `anywhere`, …). Some sources list only a city, such as "Munich Office", so keep the cities you care about here.
 - `remote_words` and `remote_blocked`: a remote job passes unless it's limited to a blocked region, such as `remote - US only`.
 
 ### Searches
@@ -162,7 +163,7 @@ Words match as whole words. `ux` matches "UX Designer" but not "Luxury".
 | `naukri_pages_per_keyword` | Naukri | Result pages read per keyword. |
 | `naukri_max_details_per_run` | Naukri | Same as the LinkedIn one, for Naukri. Each detail page takes about 5 seconds. |
 
-Hirist, Cutshort and Wellfound use their own short query lists at the top of `src_boards.py`.
+Hirist, Cutshort, Wellfound and the German job board use their own short query lists at the top of `src_boards.py`. LinkedIn searches the countries listed in `PLACES` in `src_linkedin.py`.
 
 ### Companies: `companies`
 
@@ -174,8 +175,9 @@ The bot reads the careers pages of companies that use one of four applicant-trac
 | `lever` | `jobs.lever.co/`**`cred`** |
 | `ashby` | `jobs.ashbyhq.com/`**`notion`** |
 | `smartrecruiters` | `jobs.smartrecruiters.com/`**`swiggy`** |
+| `personio` | **`westwing`**`.jobs.personio.de` (common with German companies) |
 
-To check a slug before adding it, open `https://boards-api.greenhouse.io/v1/boards/<slug>/jobs` (or the Lever, Ashby or SmartRecruiters equivalent). If you see a list of jobs, the slug works.
+To check a slug before adding it, open `https://boards-api.greenhouse.io/v1/boards/<slug>/jobs` (or the Lever, Ashby or SmartRecruiters equivalent, or `https://<slug>.jobs.personio.de/xml` for Personio). If you see a list of jobs, the slug works.
 
 ### Mac only: `night`
 
@@ -264,8 +266,8 @@ The first time, macOS may ask whether Python can access the folder (for example 
 | `core.py` | Shared logic: filters, the coloured tiers, duplicate checks, contact lookup, Telegram messages |
 | `src_linkedin.py` | LinkedIn public job search |
 | `src_naukri.py` | Naukri, through a Chrome browser |
-| `src_ats.py` | Company careers pages (Greenhouse, Lever, Ashby, SmartRecruiters), Remotive, RemoteOK |
-| `src_boards.py` | Hirist, Foundit, Cutshort, Wellfound |
+| `src_ats.py` | Company careers pages (Greenhouse, Lever, Ashby, SmartRecruiters, Personio), Remotive, RemoteOK |
+| `src_boards.py` | Hirist, Foundit, Cutshort, Wellfound, Bundesagentur für Arbeit (Germany) |
 | `setup_telegram.py` | One-time Telegram setup; writes `.env` |
 | `install_mac.sh` | Turns the Mac schedule on or off |
 | `.github/workflows/feeds.yml` | Cloud schedule for LinkedIn + Naukri |

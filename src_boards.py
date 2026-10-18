@@ -1,16 +1,19 @@
-"""Indian job boards with open JSON: Hirist, Foundit, Cutshort, Wellfound. Plain HTTP, no browser."""
+"""Job boards with open JSON: Hirist, Foundit, Cutshort, Wellfound (India) and the German federal
+job board (Bundesagentur für Arbeit). Plain HTTP, no browser."""
 import json
 import re
 import urllib.parse
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
-from core import http_get, http_json, new_job, strip_html
+from core import http_get, http_json, new_job, strip_html, usd_to_lpa
 
 # Each board searches differently, so each gets its own short list of queries.
 HIRIST_QUERIES = ["ui ux designer", "product designer", "visual designer", "ux engineer"]
 FOUNDIT_QUERIES = ["ui ux designer", "product designer", "visual designer", "ux designer"]
 CUTSHORT_SLUGS = ["user-interface-ui-design-jobs", "user-experience-ux-design-jobs", "product-design-jobs"]
 WELLFOUND_ROLES = ["ui-ux-designer", "product-designer"]
+ARBEITSAGENTUR_QUERIES = ["UX/UI", "UX Designer", "UI Designer", "Product Designer", "Interaction Designer"]
 
 
 def _ms(v):
@@ -123,4 +126,32 @@ def wellfound(_):
     return jobs
 
 
-FETCHERS = [hirist, foundit, cutshort, wellfound]
+def arbeitsagentur(_):
+    """Germany's federal job board. Its public API (used by the official app) needs this fixed key."""
+    berlin = ZoneInfo("Europe/Berlin")
+    jobs = []
+    for q in ARBEITSAGENTUR_QUERIES:
+        data = http_json("https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs?" + urllib.parse.urlencode(
+            {"was": q, "angebotsart": 1, "veroeffentlichtseit": 2, "size": 100, "page": 1}),
+            headers={"X-API-Key": "jobboerse-jobsuche"})
+        for j in data.get("ergebnisliste") or []:
+            places = [(x.get("adresse") or {}).get("ort", "") for x in j.get("stellenlokationen") or []]
+            if j.get("homeofficemoeglich"):
+                places.append("Remote possible")
+            # Only the day of first publication is given; use the last edit time when it's that same day.
+            first, edited = j.get("datumErsteVeroeffentlichung", ""), j.get("aenderungsdatum", "")
+            when = edited[:19] if edited.startswith(first) else first
+            lo, hi = j.get("gehaltsspanneVon"), j.get("gehaltsspanneBis") or j.get("festgehalt")
+            yearly = j.get("verguetungsangabe") == "JAHRESGEHALT"
+            jobs.append(new_job(
+                id=f"ba:{j['referenznummer']}", source="Arbeitsagentur", title=j.get("stellenangebotsTitel", ""),
+                company=j.get("firma", ""), location=", ".join(p for p in places if p) + ", Germany",
+                url=j.get("externeURL") or f"https://www.arbeitsagentur.de/jobsuche/jobdetail/{j['referenznummer']}",
+                posted_at=datetime.fromisoformat(when).replace(tzinfo=berlin) if when else None,
+                salary_min_lpa=usd_to_lpa(lo, "EUR") if yearly and lo else None,
+                salary_max_lpa=usd_to_lpa(hi, "EUR") if yearly and hi else None,
+                salary_text=f"€{lo:,.0f}–{hi:,.0f} a year" if yearly and lo and hi else ""))
+    return jobs
+
+
+FETCHERS = [hirist, foundit, cutshort, wellfound, arbeitsagentur]

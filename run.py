@@ -32,7 +32,8 @@ def company_platforms():
     companies = sum(len(v) for v in CFG["companies"].values())
     return [(f"Company career sites ({companies} companies)", "company site", ""),
             ("Remotive", "Remotive", ""), ("RemoteOK", "RemoteOK", ""), ("Hirist", "Hirist", ""),
-            ("Foundit", "Foundit", ""), ("Cutshort", "Cutshort", ""), ("Wellfound", "Wellfound", "")]
+            ("Foundit", "Foundit", ""), ("Cutshort", "Cutshort", ""), ("Wellfound", "Wellfound", ""),
+            ("Arbeitsagentur (Germany)", "Arbeitsagentur", "")]
 
 
 def feeds(state="seen-mac.json", night_mode=True):
