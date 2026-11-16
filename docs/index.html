@@ -78,6 +78,25 @@ h1 { font-size: 17px; margin: 0; font-weight: 600; }
 .gaps span { background: #fdecec; color: #b42318; border-radius: 6px; padding: 4px 9px; font-size: 12px; }
 .wide { grid-column: 1 / -1; }
 
+/* all jobs */
+.chips { display: flex; gap: 6px; flex-wrap: wrap; padding: 0 20px 10px; }
+.chip-f { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 4px 10px; cursor: pointer; font-size: 12px; color: var(--muted); }
+.chip-f b { color: var(--ink); margin-left: 4px; }
+.chip-f.on { background: var(--accent-soft); border-color: #d6d0fb; color: #5b4bd5; }
+.jt { margin: 0 20px 28px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.jr { display: grid; grid-template-columns: minmax(0, 2.4fr) minmax(0, 1.1fr) 90px 80px minmax(0, 1.8fr); gap: 12px; padding: 10px 14px; border-top: 1px solid var(--line); align-items: center; cursor: pointer; }
+.jr:hover { background: var(--hover); }
+.jr.head { border-top: 0; background: var(--bg); color: var(--faint); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; cursor: default; }
+.jr .t { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jr .c, .jr .m { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.why { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 6px; background: #fdecec; color: #b42318; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.why.ok { background: #e7f6ec; color: #18794e; }
+.more { display: block; margin: 0 auto 28px; }
+.facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 14px; }
+.facts div span { display: block; color: var(--faint); font-size: 11px; }
+.desc { white-space: pre-wrap; max-height: 360px; overflow-y: auto; }
+@media (max-width: 760px) { .jr { grid-template-columns: minmax(0, 1fr) auto; } .jr .hide-sm { display: none; } .jt { margin: 0 16px 24px; } .chips { padding: 0 16px 10px; } }
+
 /* drawer */
 .scrim { position: fixed; inset: 0; background: rgba(15,20,30,.25); opacity: 0; pointer-events: none; transition: opacity .15s; z-index: 10; }
 .scrim.on { opacity: 1; pointer-events: auto; }
@@ -116,7 +135,7 @@ a { color: #5b4bd5; }
     <h1>Job Applications</h1>
     <span class="updated" id="updated"></span>
   </div>
-  <nav class="tabs"><a class="tab on" href="#board" data-view="board">Board</a><a class="tab" href="#insights" data-view="insights">Insights</a></nav>
+  <nav class="tabs"><a class="tab on" href="#board" data-view="board">Board</a><a class="tab" href="#jobs" data-view="jobs">All jobs</a><a class="tab" href="#insights" data-view="insights">Insights</a></nav>
 </header>
 
 <section class="connect" id="connect" hidden>
@@ -143,7 +162,22 @@ a { color: #5b4bd5; }
   <main class="board" id="board"></main>
 </div>
 
-<div id="insights" hidden>
+<div id="view-jobs" hidden>
+  <div class="toolbar">
+    <label class="search">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="jq" placeholder="Search role, company or skill">
+    </label>
+    <select class="btn" id="jsource"><option value="">All sources</option></select>
+    <select class="btn" id="jperiod"><option value="1">Last 24 hours</option><option value="7" selected>Last 7 days</option><option value="30">Last 30 days</option><option value="0">All time</option></select>
+    <span class="updated" id="jnote" style="margin-left:0"></span>
+  </div>
+  <div class="chips" id="jchips"></div>
+  <div class="jt" id="jtable"></div>
+  <button class="btn more" id="jmore" hidden>Show more</button>
+</div>
+
+<div id="view-insights" hidden>
   <div class="toolbar">
     <select class="btn" id="period"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="0">All time</option></select>
     <select class="btn" id="scope"><option value="all">All design jobs seen</option><option value="alerted">Only jobs that passed my filters</option></select>
@@ -218,8 +252,12 @@ function inResume(name) {
   return keys.some(k => profileText.includes(k.toLowerCase()));
 }
 
+let archiveLoading = null;
+function loadArchive() {  // shared by Board details, All jobs and Insights
+  return archiveLoading ||= loadInsights().finally(() => archiveLoading = null);
+}
 async function loadInsights() {
-  $("ins-note").textContent = "Loading job archive…";
+  $("ins-note").textContent = $("jnote").textContent = "Loading job archive…";
   const q = `query { repository(owner:"${REPO.owner}", name:"${REPO.name}") {
     jobs: object(expression:"HEAD:jobs") { ... on Tree { entries { name object { ... on Tree { entries { name object { ... on Blob { text } } } } } } } }
     profile: object(expression:"HEAD:profile.json") { ... on Blob { text } } } }`;
@@ -230,7 +268,98 @@ async function loadInsights() {
   for (const m of j.data.repository.jobs?.entries || [])
     for (const f of m.object?.entries || [])
       for (const line of (f.object?.text || "").split("\n")) if (line.trim()) archive.push(JSON.parse(line));
-  renderInsights();
+  archive.sort((a, b) => (b.seen_at || "").localeCompare(a.seen_at || ""));
+  renderInsights(); renderJobs();
+  if (openKey) openDrawer(openKey);
+}
+
+// ---- all jobs ---------------------------------------------------------------------------
+const WHY = {
+  alerted: "Sent to you", location: "Outside Hyderabad, Bangalore or remote", experience: "Asks for too much experience",
+  "too many applicants": "Too many applicants", "too old": "Posted too long ago", salary: "Pays below 6 LPA",
+  "design-eng without UI signals": "Engineering role, not UI design",
+};
+const whyShort = r => WHY[r.outcome] || r.outcome;
+function whyLong(r) {
+  const o = r.outcome;
+  if (o === "alerted") return "Passed every filter, so it was sent to you in Telegram.";
+  if (o === "location") return `Location "${r.location || "unknown"}" isn't Hyderabad, Bangalore or a remote role open to India.`;
+  if (o === "experience") return `Asks for at least ${r.exp_min} years (${r.exp_text || "from the description"}). Your limit is a minimum of 5 years or less.`;
+  if (o === "too many applicants") return `Already had ${r.applicants} applicants when found. Your limit is under 100.`;
+  if (o === "too old") return `Posted ${r.posted_at ? when(r.posted_at) : "more than a day before it was found"}. Only jobs from the last 24 hours are sent.`;
+  if (o === "salary") return `Top of the stated salary is ₹${r.salary_max_lpa} LPA (${r.salary_text || "from the post"}). Your minimum is 6 LPA.`;
+  if (o === "design-eng without UI signals") return "Titled \"design engineer\", but the description doesn't mention UI tools or screens (Figma, prototypes, CSS…). In India this usually means mechanical or chip design.";
+  return o;
+}
+const JF = { outcome: "", limit: 100 };
+function jobsFiltered() {
+  const days = +$("jperiod").value, cutoff = days ? Date.now() - days * 864e5 : 0;
+  const q = $("jq").value.toLowerCase(), src = $("jsource").value;
+  return (archive || []).filter(r => (!cutoff || new Date(r.seen_at || 0) >= cutoff) && (!src || r.source === src) &&
+    (!q || [r.title, r.company, r.location, ...Object.values(r.skills || {}).flat()].join(" ").toLowerCase().includes(q)));
+}
+function renderJobs() {
+  if (!archive) return;
+  const srcs = [...new Set(archive.map(r => r.source))].sort();
+  const cur = $("jsource").value;
+  $("jsource").innerHTML = `<option value="">All sources</option>` + srcs.map(x => `<option ${x === cur ? "selected" : ""}>${esc(x)}</option>`).join("");
+  const base = jobsFiltered();
+  const counts = {}; base.forEach(r => counts[r.outcome] = (counts[r.outcome] || 0) + 1);
+  const order = ["alerted", ...Object.keys(counts).filter(k => k !== "alerted").sort((a, b) => counts[b] - counts[a])];
+  $("jchips").innerHTML = `<button class="chip-f ${JF.outcome ? "" : "on"}" data-o="">All<b>${base.length}</b></button>` +
+    order.filter(k => counts[k]).map(k => `<button class="chip-f ${JF.outcome === k ? "on" : ""}" data-o="${esc(k)}">${esc(WHY[k] || k)}<b>${counts[k]}</b></button>`).join("");
+  document.querySelectorAll(".chip-f").forEach(b => b.onclick = () => { JF.outcome = b.dataset.o; JF.limit = 100; renderJobs(); });
+  const rows = base.filter(r => !JF.outcome || r.outcome === JF.outcome);
+  $("jnote").textContent = `${rows.length} jobs`;
+  $("jtable").innerHTML = `<div class="jr head"><span>Role</span><span class="hide-sm">Location</span><span class="hide-sm">Source</span><span class="hide-sm">Found</span><span>Status</span></div>` +
+    (rows.slice(0, JF.limit).map(r => `<div class="jr" data-id="${esc(r.id)}">
+      <div style="min-width:0"><div class="t">${esc(r.title)}</div><div class="c">${esc(r.company)}${r.exp_text ? " · " + esc(r.exp_text) : ""}</div></div>
+      <span class="m hide-sm">${esc((r.location || "–").split(",").slice(0, 2).join(","))}</span>
+      <span class="m hide-sm">${esc(r.source)}</span>
+      <span class="m hide-sm">${ago(r.seen_at)}</span>
+      <span><span class="why ${r.outcome === "alerted" ? "ok" : ""}" title="${esc(whyLong(r))}">${esc(whyShort(r))}</span></span>
+    </div>`).join("") || `<div class="jr" style="cursor:default;color:var(--muted)">No jobs match these filters.</div>`);
+  document.querySelectorAll(".jr[data-id]").forEach(el => el.onclick = () => openJob(el.dataset.id));
+  $("jmore").hidden = rows.length <= JF.limit;
+}
+$("jmore").onclick = () => { JF.limit += 100; renderJobs(); };
+$("jq").oninput = () => { JF.limit = 100; renderJobs(); };
+$("jsource").onchange = $("jperiod").onchange = () => { JF.limit = 100; renderJobs(); };
+
+function detailsHTML(r) {
+  const sal = r.salary_max_lpa ? `₹${r.salary_min_lpa && r.salary_min_lpa !== r.salary_max_lpa ? r.salary_min_lpa + "–" : ""}${r.salary_max_lpa} LPA` : (r.salary_text || "Not stated");
+  const tags = Object.values(r.skills || {}).flat();
+  return `<div><div class="label">About the job</div><div class="facts">
+      <div><span>Experience</span>${esc(r.exp_text || (r.exp_min != null ? r.exp_min + "+ yrs" : "Not stated"))}</div>
+      <div><span>Salary</span>${esc(sal)}</div>
+      <div><span>Applicants</span>${r.applicants != null ? esc(r.applicants) : "Not shown"}</div>
+      <div><span>Posted</span>${r.posted_at ? when(r.posted_at) : "Not shown"}</div>
+      <div><span>Location</span>${esc(r.location || "–")}</div>
+      <div><span>Employer</span>${r.consultant ? "Recruitment agency" : "Direct"}${r.has_email ? " · email in post" : ""}</div>
+    </div></div>
+    ${tags.length ? `<div><div class="label">Skills mentioned</div><div class="tags">${tags.map(t => `<span class="tag">${esc(t)}</span>`).join("")}</div></div>` : ""}
+    <div><div class="label">Description</div>${r.description ? `<div class="box desc">${esc(r.description)}</div>` : `<div style="color:var(--muted)">The site didn't provide a description for this job.</div>`}</div>`;
+}
+
+function openJob(id) {
+  const r = archive.find(x => x.id === id); if (!r) return;
+  openKey = null;
+  const app = apps.find(a => a.key === r.key);
+  $("drawer").innerHTML = `
+    <div class="d-head">
+      <div class="d-row"><span class="why ${r.outcome === "alerted" ? "ok" : ""}">${esc(whyShort(r))}</span><button class="x" id="close" aria-label="Close">×</button></div>
+      <h2>${esc(r.title)}</h2>
+      <div style="color:var(--muted)">${esc(r.company)} · ${esc(r.source)} · found ${when(r.seen_at)}</div>
+    </div>
+    <div class="d-body">
+      <div class="d-row"><a class="btn" href="${esc(r.url)}" target="_blank" rel="noopener">Open job ↗</a>
+        ${app ? `<button class="btn" id="d-board">Open on Board</button>` : ""}</div>
+      <div class="box" style="background:${r.outcome === "alerted" ? "#f2fbf5" : "#fff6f6"}"><div class="label" style="margin-bottom:4px">${r.outcome === "alerted" ? "Why it was sent" : "Why it was filtered out"}</div>${esc(whyLong(r))}</div>
+      ${detailsHTML(r)}
+    </div>`;
+  $("drawer").classList.add("on"); $("scrim").classList.add("on");
+  $("close").onclick = closeDrawer;
+  if (app) $("d-board").onclick = () => { location.hash = "#board"; openDrawer(app.key); };
 }
 
 function renderInsights() {
@@ -283,11 +412,11 @@ function renderInsights() {
 $("period").onchange = renderInsights; $("scope").onchange = renderInsights;
 
 function setView() {
-  const v = location.hash === "#insights" ? "insights" : "board";
+  const v = { "#insights": "insights", "#jobs": "jobs" }[location.hash] || "board";
   document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.view === v));
   if (!token) return;
-  $("app").hidden = v !== "board"; $("insights").hidden = v !== "insights";
-  if (v === "insights" && !archive) loadInsights().catch(e => $("ins-note").textContent = "Couldn't load: " + e.message);
+  $("app").hidden = v !== "board"; $("view-insights").hidden = v !== "insights"; $("view-jobs").hidden = v !== "jobs";
+  if (v !== "board" && !archive) loadArchive().catch(e => $("ins-note").textContent = $("jnote").textContent = "Couldn't load: " + e.message);
 }
 window.addEventListener("hashchange", setView);
 
@@ -360,11 +489,15 @@ function openDrawer(key) {
       <div><div class="label">Email</div>${a.email
         ? `<div class="box"><div style="font-weight:600">${esc(a.email.subject)}</div><div style="color:var(--muted);font-size:12px;margin-bottom:8px">To ${esc(a.email.to)} · ${when(a.email.sent_at)}</div><div class="mail-body">${esc(a.email.body)}</div></div>`
         : `<div style="color:var(--muted)">Not sent: ${esc(a.email_skipped || "no email found")}</div>`}</div>
+      ${(() => { const r = a.description ? a : (archive || []).find(x => x.key === a.key);
+        return r ? detailsHTML({ ...r, ...a, description: a.description || r.description, skills: a.skills || r.skills })
+                 : `<div><div class="label">About the job</div><div style="color:var(--muted)">${archive ? "No saved details for this job." : "Loading job details…"}</div></div>`; })()}
       <div><div class="label">Notes</div><textarea id="d-notes" placeholder="Who you spoke to, interview dates, follow-ups…">${esc(a.notes || "")}</textarea>
         <button class="btn" id="d-save" style="margin-top:8px">Save notes</button></div>
       <div><div class="label">History</div><ul class="events">${(a.events || []).slice().reverse().map(e => `<li><span>${when(e.at)}</span><span>${esc(e.text)}</span></li>`).join("")}</ul></div>
     </div>`;
   $("drawer").classList.add("on"); $("scrim").classList.add("on");
+  if (!archive && !a.description) loadArchive().catch(() => {});
   $("close").onclick = closeDrawer;
   $("d-status").onchange = e => setStatus(a, e.target.value);
   $("d-save").onclick = () => update(a, { notes: $("d-notes").value }, null).then(ok => ok && toast("Notes saved"));
@@ -407,7 +540,7 @@ $("q").oninput = render;
 $("reload").onclick = () => (archive = null, load()).catch(e => $("updated").textContent = "Couldn't load: " + e.message);
 
 function show() {
-  $("connect").hidden = !!token; $("app").hidden = !token; $("insights").hidden = true;
+  $("connect").hidden = !!token; $("app").hidden = !token; $("view-insights").hidden = true; $("view-jobs").hidden = true;
   if (token) setView();
   if (token) load().catch(e => { $("updated").textContent = "Couldn't load: " + e.message;
     if (/^401/.test(e.message)) { try { localStorage.removeItem("gh_token"); } catch (x) {} token = null; show(); $("err").textContent = "That token didn't work."; } });
