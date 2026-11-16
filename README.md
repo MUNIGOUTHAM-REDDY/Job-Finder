@@ -1,6 +1,6 @@
 # Job Finder
 
-Job Finder sends a Telegram message within minutes of a new design job being posted, so you can apply before the applicant pile grows. It looks for UI/UX, product, visual, interaction and design-engineering roles in India and Germany, plus remote roles open to India. It skips roles that are too senior, too old, underpaid or already crowded.
+Job Finder sends a Telegram message within minutes of a new design job being posted, so you can apply before the applicant pile grows. It looks for UI/UX, product, visual, interaction and design-engineering roles in Hyderabad and Bangalore, plus remote roles open to India. It skips roles that are too senior, too old, underpaid or already crowded.
 
 It runs for free on GitHub Actions, around the clock. Your computer doesn't need to be on.
 
@@ -51,8 +51,8 @@ Two checks run on GitHub Actions:
 
 | Check | Sites | How often |
 |---|---|---|
-| **LinkedIn + Naukri** | LinkedIn (public job search in India and Germany, no login) and Naukri (India) (opened in a real Chrome browser, because Naukri blocks simple scripts) | every 10 min |
-| **Company sites** | Careers pages of about 120 Indian, German and global companies (Greenhouse, Lever, Ashby, SmartRecruiters, Personio), plus Hirist, Cutshort, Wellfound, Foundit (India), the Bundesagentur für Arbeit job board (Germany), Remotive and RemoteOK | every 15 min |
+| **LinkedIn + Naukri** | LinkedIn (public job search in India, no login) and Naukri (India) (opened in a real Chrome browser, because Naukri blocks simple scripts) | every 10 min |
+| **Company sites** | Careers pages of about 120 Indian, German and global companies (Greenhouse, Lever, Ashby, SmartRecruiters, Personio), plus Hirist, Cutshort, Wellfound, Foundit (India), Remotive and RemoteOK | every 15 min |
 
 Each check:
 
@@ -144,7 +144,7 @@ Words match as whole words. `ux` matches "UX Designer" but not "Luxury".
 | Key | Default | Meaning |
 |---|---|---|
 | `max_experience_min_years` | `5` | Drop jobs that ask for **more than** this many years as their *minimum*. A "3–6 years" job passes, a "6–10 years" job doesn't. Jobs that don't state experience pass. |
-| `min_salary_lpa` | `5.4` | Drop jobs whose stated **top** salary is below this, in lakh per year. Jobs without a salary pass. |
+| `min_salary_lpa` | `6` | Drop jobs whose stated **top** salary is below this, in lakh per year. Jobs without a salary pass. |
 | `max_age_hours` | `24` | Drop jobs posted longer ago than this. |
 | `max_applicants` | `100` | Drop jobs that already have this many applicants or more. Jobs without a count pass. |
 
@@ -267,7 +267,7 @@ The first time, macOS may ask whether Python can access the folder (for example 
 | `src_linkedin.py` | LinkedIn public job search |
 | `src_naukri.py` | Naukri, through a Chrome browser |
 | `src_ats.py` | Company careers pages (Greenhouse, Lever, Ashby, SmartRecruiters, Personio), Remotive, RemoteOK |
-| `src_boards.py` | Hirist, Foundit, Cutshort, Wellfound, Bundesagentur für Arbeit (Germany) |
+| `src_boards.py` | Hirist, Foundit, Cutshort, Wellfound (the Bundesagentur für Arbeit fetcher for Germany is kept but switched off) |
 | `setup_telegram.py` | One-time Telegram setup; writes `.env` |
 | `install_mac.sh` | Turns the Mac schedule on or off |
 | `.github/workflows/feeds.yml` | Cloud schedule for LinkedIn + Naukri |

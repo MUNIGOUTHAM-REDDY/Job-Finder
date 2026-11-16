@@ -11,7 +11,7 @@ SEARCH = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search
 DETAIL = "https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/{}"
 # Country-wide searches (they include remote-in-that-country roles). Worldwide remote on LinkedIn
 # is mostly US/EU-only, so remote-anywhere roles come from the remote boards instead.
-PLACES = [("India", {"location": "India"}), ("Germany", {"location": "Germany"})]
+PLACES = [("India", {"location": "India"})]
 
 
 def _g(pattern, s):

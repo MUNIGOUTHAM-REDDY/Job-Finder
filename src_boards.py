@@ -154,4 +154,4 @@ def arbeitsagentur(_):
     return jobs
 
 
-FETCHERS = [hirist, foundit, cutshort, wellfound, arbeitsagentur]
+FETCHERS = [hirist, foundit, cutshort, wellfound]  # arbeitsagentur (Germany) off: Hyderabad + Bangalore + remote only
