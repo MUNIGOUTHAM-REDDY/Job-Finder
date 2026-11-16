@@ -25,7 +25,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 h1 { font-size: 17px; margin: 0; font-weight: 600; }
 .updated { color: var(--faint); font-size: 12px; margin-left: auto; }
 .tabs { display: flex; gap: 18px; margin-top: 12px; }
-.tab { padding: 8px 0; border-bottom: 2px solid transparent; color: var(--muted); font-weight: 500; }
+.tab { text-decoration: none; cursor: pointer; padding: 8px 0; border-bottom: 2px solid transparent; color: var(--muted); font-weight: 500; }
 .tab.on { color: var(--ink); border-color: var(--accent); }
 .toolbar { display: flex; gap: 8px; align-items: center; padding: 12px 20px; flex-wrap: wrap; }
 .search { flex: 1 1 220px; max-width: 320px; position: relative; }
@@ -57,6 +57,26 @@ h1 { font-size: 17px; margin: 0; font-weight: 600; }
 .tag.fit-hi { background: #e7f6ec; color: #18794e; } .tag.fit-mid { background: #fff4e0; color: #a35c00; } .tag.fit-lo { background: #fdecec; color: #b42318; }
 .tag.mail { background: #e8f1fe; color: #1d5bd8; }
 .card .foot { display: flex; justify-content: space-between; color: var(--faint); font-size: 11px; margin-top: 8px; }
+
+/* insights */
+.ins { padding: 4px 20px 32px; display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); align-items: start; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; box-shadow: var(--shadow); }
+.panel h3 { margin: 0 0 4px; font-size: 14px; }
+.panel .hint { color: var(--muted); font-size: 12px; margin: 0 0 10px; }
+.bars { display: grid; gap: 7px; }
+.bar { display: grid; grid-template-columns: minmax(0, 1fr) 46px 74px; gap: 8px; align-items: center; }
+.bar .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar .track { grid-column: 1 / -1; height: 5px; background: var(--hover); border-radius: 3px; margin-top: -3px; }
+.bar .fill { height: 100%; border-radius: 3px; background: var(--accent); }
+.bar .pct { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+.have { font-size: 11px; text-align: center; border-radius: 5px; padding: 1px 0; }
+.have.yes { background: #e7f6ec; color: #18794e; } .have.no { background: #fdecec; color: #b42318; } .have.na { color: var(--faint); }
+.big { display: flex; gap: 22px; flex-wrap: wrap; }
+.big div b { display: block; font-size: 22px; }
+.big div span { color: var(--muted); font-size: 12px; }
+.gaps { display: flex; flex-wrap: wrap; gap: 6px; }
+.gaps span { background: #fdecec; color: #b42318; border-radius: 6px; padding: 4px 9px; font-size: 12px; }
+.wide { grid-column: 1 / -1; }
 
 /* drawer */
 .scrim { position: fixed; inset: 0; background: rgba(15,20,30,.25); opacity: 0; pointer-events: none; transition: opacity .15s; z-index: 10; }
@@ -96,7 +116,7 @@ a { color: #5b4bd5; }
     <h1>Job Applications</h1>
     <span class="updated" id="updated"></span>
   </div>
-  <nav class="tabs"><span class="tab on">Board</span></nav>
+  <nav class="tabs"><a class="tab on" href="#board" data-view="board">Board</a><a class="tab" href="#insights" data-view="insights">Insights</a></nav>
 </header>
 
 <section class="connect" id="connect" hidden>
@@ -121,6 +141,15 @@ a { color: #5b4bd5; }
     <div class="kpis" id="kpis"></div>
   </div>
   <main class="board" id="board"></main>
+</div>
+
+<div id="insights" hidden>
+  <div class="toolbar">
+    <select class="btn" id="period"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="0">All time</option></select>
+    <select class="btn" id="scope"><option value="all">All design jobs seen</option><option value="alerted">Only jobs that passed my filters</option></select>
+    <span class="updated" id="ins-note" style="margin-left:0"></span>
+  </div>
+  <div class="ins" id="ins"></div>
 </div>
 
 <div class="scrim" id="scrim"></div>
@@ -170,6 +199,97 @@ async function load() {
   render();
   if (openKey) openDrawer(openKey);
 }
+
+// ---- insights -----------------------------------------------------------------------------
+let archive = null, profileText = "";
+const CAT = { design: "Design skills", tools: "Tools", development: "Development", ai: "AI", domain: "Industries" };
+const ALIAS = { "Mobile app design": ["ios", "mobile"], "Data-driven design": ["mixpanel", "analytics", "clarity"],
+  "Handoff to developers": ["handoff"], "Stakeholder collaboration": ["stakeholder"], "Front-end development": ["react"],
+  "AI tools in design": ["ai-assisted", "claude", "ai tools"], "Prompting / LLMs": ["prompt", "claude", "chatgpt"],
+  "Fintech": ["fintech", "stock"], "Consumer apps": ["consumer"], "SaaS / B2B": ["saas", "enterprise"], "Edtech": ["learning"],
+  "A/B testing": ["variations", "a/b"], "Motion / micro-interactions": ["motion", "micro-interaction"],
+  "User flows / journeys": ["user flows"], "Responsive design": ["responsive"], "Figma AI / Make": ["figma make"],
+  "Web design": ["website"], "UX writing": ["microcopy"], "Dashboard / SaaS design": ["dashboard"], "HTML/CSS": ["html/css"],
+  "Wireframing": ["wirefram"], "Usability testing": ["usability test"], "Personas": ["persona"], "Accessibility": ["accessib", "wcag"] };
+const NA = new Set(["Portfolio required"]);
+function inResume(name) {
+  if (NA.has(name)) return null;
+  const keys = ALIAS[name] || name.toLowerCase().split(" / ").map(k => k.trim());
+  return keys.some(k => profileText.includes(k.toLowerCase()));
+}
+
+async function loadInsights() {
+  $("ins-note").textContent = "Loading job archive…";
+  const q = `query { repository(owner:"${REPO.owner}", name:"${REPO.name}") {
+    jobs: object(expression:"HEAD:jobs") { ... on Tree { entries { name object { ... on Tree { entries { name object { ... on Blob { text } } } } } } } }
+    profile: object(expression:"HEAD:profile.json") { ... on Blob { text } } } }`;
+  const j = await (await gh("/graphql", { method: "POST", body: JSON.stringify({ query: q }) })).json();
+  if (j.errors) throw new Error(j.errors[0].message);
+  profileText = (j.data.repository.profile?.text || "").toLowerCase();
+  archive = [];
+  for (const m of j.data.repository.jobs?.entries || [])
+    for (const f of m.object?.entries || [])
+      for (const line of (f.object?.text || "").split("\n")) if (line.trim()) archive.push(JSON.parse(line));
+  renderInsights();
+}
+
+function renderInsights() {
+  if (!archive) return;
+  const days = +$("period").value, cutoff = days ? Date.now() - days * 864e5 : 0;
+  const all = archive.filter(r => (!cutoff || new Date(r.seen_at || r.posted_at || 0) >= cutoff) && ($("scope").value === "all" || r.outcome === "alerted"));
+  const withText = all.filter(r => (r.description || "").length > 200);
+  $("ins-note").textContent = `${all.length} jobs · ${withText.length} with a full description (skills are counted from these)`;
+  if (!withText.length) { $("ins").innerHTML = `<div class="panel wide">No job descriptions saved for this period yet. They build up as the checks run.</div>`; return; }
+
+  const count = cat => { const c = {}; withText.forEach(r => (r.skills?.[cat] || []).forEach(s => c[s] = (c[s] || 0) + 1));
+    return Object.entries(c).sort((a, b) => b[1] - a[1]); };
+  const pct = n => Math.round(100 * n / withText.length);
+  const gaps = [];
+  const panel = (cat, limit) => {
+    const rows = count(cat).slice(0, limit);
+    rows.forEach(([n, c]) => { if (inResume(n) === false && pct(c) >= 10) gaps.push([n, pct(c)]); });
+    return `<section class="panel"><h3>${CAT[cat]}</h3><p class="hint">Share of postings that mention it</p><div class="bars">${rows.map(([n, c]) => {
+      const have = inResume(n);
+      return `<div class="bar"><span class="name" title="${esc(n)}">${esc(n)}</span><span class="pct">${pct(c)}%</span>
+        <span class="have ${have === null ? "na" : have ? "yes" : "no"}">${have === null ? "–" : have ? "In resume" : "Missing"}</span>
+        <div class="track"><div class="fill" style="width:${pct(c)}%"></div></div></div>`; }).join("") || `<span class="hint">None found</span>`}</div></section>`;
+  };
+  const panels = ["design", "tools", "development", "ai", "domain"].map(c => panel(c, c === "design" ? 16 : 10)).join("");
+
+  const exps = all.filter(r => r.exp_min != null).map(r => r.exp_min).sort((a, b) => a - b);
+  const median = exps.length ? exps[exps.length >> 1] : null;
+  const sal = all.filter(r => r.salary_max_lpa).map(r => r.salary_max_lpa).sort((a, b) => a - b);
+  const top = (key, n) => { const c = {}; all.forEach(r => { const k = (r[key] || "").trim(); if (k) c[k] = (c[k] || 0) + 1; });
+    return Object.entries(c).sort((a, b) => b[1] - a[1]).slice(0, n); };
+  const list = (rows) => `<div class="bars">${rows.map(([n, c]) => `<div class="bar"><span class="name">${esc(n)}</span><span class="pct">${c}</span><span></span></div>`).join("")}</div>`;
+  const outcomes = top("outcome", 8);
+  gaps.sort((a, b) => b[1] - a[1]);
+
+  $("ins").innerHTML = `
+    <section class="panel wide"><div class="big">
+      <div><b>${all.length}</b><span>design jobs seen</span></div>
+      <div><b>${all.filter(r => r.outcome === "alerted").length}</b><span>passed your filters</span></div>
+      <div><b>${median ?? "–"}${median != null ? " yrs" : ""}</b><span>typical minimum experience</span></div>
+      <div><b>${sal.length ? "₹" + sal[sal.length >> 1] + " LPA" : "–"}</b><span>typical top salary (${sal.length} posted)</span></div>
+      <div><b>${all.length ? Math.round(100 * all.filter(r => r.has_email).length / all.length) : 0}%</b><span>posts with an email</span></div>
+    </div></section>
+    <section class="panel wide"><h3>Worth learning next</h3><p class="hint">Asked for in 10% or more of postings and not in your resume yet. If you already have one, add it to LinkedIn so the next resume sync picks it up.</p>
+      <div class="gaps">${gaps.map(([n, p]) => `<span>${esc(n)} · ${p}%</span>`).join("") || `<span style="background:#e7f6ec;color:#18794e">No big gaps right now</span>`}</div></section>
+    ${panels}
+    <section class="panel"><h3>Most common titles</h3><p class="hint">Number of postings</p>${list(top("title", 10))}</section>
+    <section class="panel"><h3>Companies hiring most</h3><p class="hint">Number of postings</p>${list(top("company", 10))}</section>
+    <section class="panel"><h3>Why jobs were filtered out</h3><p class="hint">"alerted" means it reached you</p>${list(outcomes)}</section>`;
+}
+$("period").onchange = renderInsights; $("scope").onchange = renderInsights;
+
+function setView() {
+  const v = location.hash === "#insights" ? "insights" : "board";
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.view === v));
+  if (!token) return;
+  $("app").hidden = v !== "board"; $("insights").hidden = v !== "insights";
+  if (v === "insights" && !archive) loadInsights().catch(e => $("ins-note").textContent = "Couldn't load: " + e.message);
+}
+window.addEventListener("hashchange", setView);
 
 function visible(a) {
   const q = $("q").value.toLowerCase();
@@ -284,10 +404,11 @@ async function openPdf(a) {
 function toggle(id, key) { $(id).onclick = () => { F[key] = !F[key]; $(id).classList.toggle("on", F[key]); render(); }; }
 toggle("f-mail", "mail"); toggle("f-fit", "fit"); toggle("f-skip", "skip");
 $("q").oninput = render;
-$("reload").onclick = () => load().catch(e => $("updated").textContent = "Couldn't load: " + e.message);
+$("reload").onclick = () => (archive = null, load()).catch(e => $("updated").textContent = "Couldn't load: " + e.message);
 
 function show() {
-  $("connect").hidden = !!token; $("app").hidden = !token;
+  $("connect").hidden = !!token; $("app").hidden = !token; $("insights").hidden = true;
+  if (token) setView();
   if (token) load().catch(e => { $("updated").textContent = "Couldn't load: " + e.message;
     if (/^401/.test(e.message)) { try { localStorage.removeItem("gh_token"); } catch (x) {} token = null; show(); $("err").textContent = "That token didn't work."; } });
 }

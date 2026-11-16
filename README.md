@@ -213,6 +213,7 @@ After each check, the application worker (code and log in the private `job-appli
 2. Emails that PDF to the address in the job post (fit 50+, at most 20 a day, from Gmail).
 3. Sends the PDF to Telegram with **Approve** and **Skip** buttons. Taps are picked up by the next check.
 4. Logs every step, one file per job, in that private repo.
+5. Saves every design job the checks see (including ones filtered out) with its description and the skills it mentions, in `jobs/<month>/` there. The dashboard's **Insights** tab turns this into the most-asked skills and tools, and which of them your resume is missing.
 
 The **dashboard** is `docs/index.html`, published with GitHub Pages. It has no data in it: when opened, it asks for a GitHub token and reads the log from the private repo, so your applications stay private. You can change a job's status (Applied, Interview, Offer, Rejected) and keep notes there.
 

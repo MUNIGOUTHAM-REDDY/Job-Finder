@@ -290,15 +290,23 @@ def _inbox_add(name, items):
     f.write_text(json.dumps(old + items, default=str))
 
 
+def _slim(j):
+    d = {k: j[k] for k in ("id", "source", "title", "company", "location", "url", "exp_min", "exp_max", "exp_text",
+                           "salary_text", "salary_min_lpa", "salary_max_lpa", "applicants", "consultant", "contacts")}
+    d["posted_at"] = j["posted_at"].isoformat() if j["posted_at"] else None
+    d["description"] = (j["description"] or "")[:6000]
+    return d
+
+
 def handoff(jobs):
     """Queue alerted jobs for the worker, which tailors a resume, emails the contact and asks in Telegram."""
-    def slim(j):
-        d = {k: j[k] for k in ("id", "source", "title", "company", "location", "url", "exp_text", "salary_text",
-                               "salary_min_lpa", "salary_max_lpa", "applicants", "consultant", "contacts")}
-        d["posted_at"] = j["posted_at"].isoformat() if j["posted_at"] else None
-        d["description"] = (j["description"] or "")[:6000]
-        return d
-    _inbox_add("jobs.json", [slim(j) for j in jobs])
+    _inbox_add("jobs.json", [_slim(j) for j in jobs])
+
+
+def record_found(jobs_with_outcome):
+    """Queue every design job seen this run (alerted or filtered out) for the job archive in job-applications."""
+    _inbox_add("found.json", [dict(_slim(j), outcome=o, seen_at=now().isoformat(timespec="seconds"))
+                              for j, o in jobs_with_outcome])
 
 
 def relay_buttons():
@@ -442,13 +450,15 @@ def format_alert(job):
 
 def process(jobs, seen, label, platforms):
     """Filter, then send every new matching role as its own card."""
-    fresh, reasons, batch = [], {}, set()
+    fresh, reasons, batch, found = [], {}, set(), []
     for job in jobs:
         # The same role is often posted once per city; alert it once.
         if seen.has(job) or norm_key(job) in batch:
             continue
         batch.add(norm_key(job))
         r = reject_reason(fill_experience(job))
+        if r != "title":
+            found.append((job, r or "alerted"))
         if r:
             reasons[r] = reasons.get(r, 0) + 1
             continue
@@ -475,6 +485,7 @@ def process(jobs, seen, label, platforms):
             sent.append(j)
         time.sleep(1.1)  # Telegram allows ~1 message/second per chat
     handoff(sent)
+    record_found(found)
     log(f"{label}: {len(jobs)} checked, {len(fresh)} alerted, skipped {reasons}")
     seen.save()
     return fresh
