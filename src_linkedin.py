@@ -79,10 +79,12 @@ def fetch(seen, last_run, searches=None, title_filter=None, loc_filter=None, max
 
     candidates = []
     for c in cards.values():
-        loc = c["location"] + (" (Remote)" if c["place"] == "Remote" else "")
+        # Never label a job remote just because it came from a remote-filtered search: LinkedIn mixes
+        # promoted on-site jobs into those results. Callers decide from the job's own location/description.
+        loc = c["location"]
         job = new_job(id=f"li:{c['id']}", source="LinkedIn", title=c["title"], company=c["company"],
                       location=loc, url=f"https://www.linkedin.com/jobs/view/{c['id']}",
-                      posted_at=parse_relative(c["posted"]))
+                      posted_at=parse_relative(c["posted"]), from_remote_search=c["place"] == "Remote")
         if title_filter(job["title"]) and loc_filter(loc) and not seen.has(job):
             candidates.append(job)
     return list(_details(candidates, seen, detail_cap)), ok

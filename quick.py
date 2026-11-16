@@ -33,7 +33,11 @@ def location_ok(loc):
 def where(job):
     """('remote' | 'near' | 'area not stated', None) if acceptable, else (None, reason)."""
     loc, text = job["location"] or "", job["description"] or ""
-    if LOC_REMOTE.search(loc) or re.search(r"work from home|\bwfh\b|fully remote|100% remote", job["title"] + " " + text[:1500], re.I):
+    says_remote = LOC_REMOTE.search(loc) or re.search(r"work from home|\bwfh\b|fully remote|100% remote|remote (?:role|job|position|work)",
+                                                      job["title"] + " " + text[:1500], re.I)
+    # A remote-filtered LinkedIn search whose card shows only the country is the remote filter working;
+    # a card naming a city is often a promoted on-site job, so it needs proof from the post itself.
+    if says_remote or (job.get("from_remote_search") and loc.strip().lower() in ("india", "")):
         if not LOC_BLOCKED.search(loc):
             return "remote", None
     if NEAR.search(loc):
