@@ -696,6 +696,7 @@
       "at least (?:[1-9]|one|two|three) years?",
       "(?:[1-9]|one|two|three)\\+? years? of (?:relevant |prior )?experience (?:is )?(?:required|mandatory|must)"
     ],
-    "_fresher_note": "Freshers only: jobs stating any minimum experience above 0, a LinkedIn level other than Entry level/Internship, or phrases like 'no freshers' are dropped. Titles with seniority or specialist markers are dropped."
+    "_fresher_note": "Freshers only: jobs stating any minimum experience above 0, a LinkedIn level other than Entry level/Internship, or phrases like 'no freshers' are dropped. Titles with seniority or specialist markers are dropped.",
+    "telegram": false
   }
 }

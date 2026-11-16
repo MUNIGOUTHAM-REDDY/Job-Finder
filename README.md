@@ -228,7 +228,7 @@ A second search looks for any non-design job that can be started quickly (suppor
 - **Where:** remote roles open to India, or on-site within about 4–6 km of HSR Layout Sector 7. Postings rarely give coordinates, so this matches locality names (`near_hsr` and `far_from_hsr`). "Bengaluru" with no area is kept and labelled "area not stated".
 - **Pay:** full-time roles must state at least ₹22k a month if they state pay at all. Part-time has no minimum.
 - **Dropped:** recruitment agencies, consultancies and walk-in/mass hiring drives; likely scams (fees or deposits, pay-per-day promises, typing/copy-paste work, Telegram/WhatsApp-only contact, part-time pay over ₹60k a month); senior roles; more than 1 year's minimum experience.
-- **Alerts:** one Telegram digest at most once an hour. No resume or email is sent for these; they're tracked on the dashboard (toggle **Quick jobs** at the top right).
+- **Alerts:** none in Telegram (turned off; set `quick.telegram` to `true` for an hourly digest). No resume or email is sent; they're tracked on the dashboard (toggle **Quick jobs** at the top right).
 
 ---
 

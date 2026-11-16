@@ -121,6 +121,11 @@ def process(jobs, seen, label):
     _inbox_add("quick.json", [dict(_slim(j), track="quick", part_time=j.get("part_time"), where=j.get("where")) for j in fresh])
 
     # Hourly digest: queue now, send when an hour has passed since the last one.
+    if not Q.get("telegram", True):  # turned off by Muni (17 Nov): quick jobs are tracked on the dashboard only
+        seen.meta.pop("pending", None)
+        log(f"{label}: {len(jobs)} checked, {len(fresh)} matched, skipped {reasons}")
+        seen.save()
+        return fresh
     rank = {"remote": 0, "near": 1, "area not stated": 2}
     pending = seen.meta.setdefault("pending", [])
     pending += [{"line": digest_line(j), "rank": rank.get(j.get("where"), 3)} for j in fresh]
