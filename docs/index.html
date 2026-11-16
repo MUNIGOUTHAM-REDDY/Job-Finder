@@ -4,175 +4,274 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Application Tracker</title>
+<title>Application Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #f6f7f9; --card: #fff; --ink: #16181d; --muted: #646b78; --line: #e3e6eb; --accent: #1e40af;
-  --chip: #eef1f5; --good: #15803d; --warn: #b45309; --bad: #b91c1c;
-}
-@media (prefers-color-scheme: dark) {
-  :root { --bg: #0f1115; --card: #171a21; --ink: #e8eaee; --muted: #9aa2b1; --line: #262b35; --accent: #8fb0ff;
-          --chip: #222733; --good: #4ade80; --warn: #fbbf24; --bad: #f87171; }
+  --bg: #f7f8fa; --panel: #ffffff; --ink: #1f2430; --muted: #6b7280; --faint: #9aa1ad; --line: #e6e8ec;
+  --hover: #f1f3f6; --accent: #7b68ee; --accent-soft: #efedfd; --shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.08);
+  color-scheme: light;
 }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif; }
-main { max-width: 1180px; margin: 0 auto; padding: 24px 16px 64px; }
-h1 { font-size: 22px; margin: 0 0 4px; }
-.sub { color: var(--muted); margin: 0 0 20px; }
-.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 18px; }
-.stat { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; cursor: pointer; }
-.stat.on { border-color: var(--accent); }
-.stat b { display: block; font-size: 22px; }
-.stat span { color: var(--muted); font-size: 12px; }
-.bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-input, select, textarea, button { font: inherit; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; }
-button { cursor: pointer; }
-button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-#q { flex: 1; min-width: 180px; }
-.list { display: grid; gap: 10px; }
-.row { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
-.top { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
-.title { font-weight: 600; }
-.meta { color: var(--muted); font-size: 13px; }
-.chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
-.chip { background: var(--chip); border-radius: 999px; padding: 2px 9px; font-size: 12px; }
-.chip.good { color: var(--good); } .chip.warn { color: var(--warn); } .chip.bad { color: var(--bad); }
-details { margin-top: 8px; }
-summary { cursor: pointer; color: var(--muted); font-size: 13px; }
-.events { margin: 8px 0; padding-left: 18px; color: var(--muted); font-size: 13px; }
-pre { white-space: pre-wrap; background: var(--chip); padding: 10px; border-radius: 8px; font: 13px/1.45 inherit; }
-textarea { width: 100%; min-height: 60px; margin-top: 6px; }
-.actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-.login { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px; max-width: 560px; }
-.login input { width: 100%; margin: 10px 0; }
-.empty { color: var(--muted); padding: 30px 0; text-align: center; }
-a { color: var(--accent); }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 13px/1.45 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+button, input, select, textarea { font: inherit; color: inherit; }
+
+/* top bar */
+.top { background: var(--panel); border-bottom: 1px solid var(--line); padding: 14px 20px 0; position: sticky; top: 0; z-index: 5; }
+.title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.logo { width: 28px; height: 28px; border-radius: 8px; background: linear-gradient(135deg, #7b68ee, #49ccf9); display: grid; place-items: center; color: #fff; font-weight: 700; }
+h1 { font-size: 17px; margin: 0; font-weight: 600; }
+.updated { color: var(--faint); font-size: 12px; margin-left: auto; }
+.tabs { display: flex; gap: 18px; margin-top: 12px; }
+.tab { padding: 8px 0; border-bottom: 2px solid transparent; color: var(--muted); font-weight: 500; }
+.tab.on { color: var(--ink); border-color: var(--accent); }
+.toolbar { display: flex; gap: 8px; align-items: center; padding: 12px 20px; flex-wrap: wrap; }
+.search { flex: 1 1 220px; max-width: 320px; position: relative; }
+.search input { width: 100%; padding: 7px 10px 7px 30px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+.search svg { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); color: var(--faint); }
+.btn { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 6px 11px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+.btn:hover { background: var(--hover); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.on { background: var(--accent-soft); border-color: #d6d0fb; color: #5b4bd5; }
+.kpis { display: flex; gap: 18px; color: var(--muted); font-size: 12px; margin-left: auto; flex-wrap: wrap; }
+.kpis b { color: var(--ink); font-size: 14px; margin-right: 4px; }
+
+/* board */
+.board { display: flex; gap: 12px; padding: 4px 20px 24px; overflow-x: auto; align-items: flex-start; min-height: calc(100vh - 150px); }
+.col { flex: 0 0 272px; background: #f0f1f4; border-radius: 10px; display: flex; flex-direction: column; max-height: calc(100vh - 170px); }
+.col.drop { outline: 2px dashed var(--accent); outline-offset: -2px; background: var(--accent-soft); }
+.col-head { display: flex; align-items: center; gap: 8px; padding: 10px 10px 8px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 6px; font-size: 11px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
+.count { color: var(--muted); font-weight: 500; }
+.cards { padding: 0 8px 10px; overflow-y: auto; display: grid; gap: 8px; }
+.empty-col { color: var(--faint); text-align: center; padding: 18px 8px; border: 1px dashed #d9dce2; border-radius: 8px; font-size: 12px; }
+.card { background: var(--panel); border-radius: 8px; box-shadow: var(--shadow); padding: 10px 11px; cursor: pointer; border: 1px solid transparent; }
+.card:hover { border-color: #d6d0fb; }
+.card.dragging { opacity: .45; }
+.card .t { font-weight: 600; line-height: 1.35; }
+.card .c { color: var(--muted); margin-top: 2px; }
+.tags { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 8px; }
+.tag { font-size: 11px; padding: 2px 7px; border-radius: 5px; background: var(--hover); color: var(--muted); }
+.tag.fit-hi { background: #e7f6ec; color: #18794e; } .tag.fit-mid { background: #fff4e0; color: #a35c00; } .tag.fit-lo { background: #fdecec; color: #b42318; }
+.tag.mail { background: #e8f1fe; color: #1d5bd8; }
+.card .foot { display: flex; justify-content: space-between; color: var(--faint); font-size: 11px; margin-top: 8px; }
+
+/* drawer */
+.scrim { position: fixed; inset: 0; background: rgba(15,20,30,.25); opacity: 0; pointer-events: none; transition: opacity .15s; z-index: 10; }
+.scrim.on { opacity: 1; pointer-events: auto; }
+.drawer { position: fixed; top: 0; right: 0; height: 100%; width: min(480px, 100%); background: var(--panel); box-shadow: -8px 0 24px rgba(16,24,40,.12);
+          transform: translateX(100%); transition: transform .18s ease; z-index: 11; display: flex; flex-direction: column; }
+.drawer.on { transform: none; }
+.d-head { padding: 18px 20px 12px; border-bottom: 1px solid var(--line); }
+.d-head h2 { font-size: 17px; margin: 6px 0 2px; }
+.d-body { padding: 16px 20px 28px; overflow-y: auto; display: grid; gap: 16px; }
+.d-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--faint); margin-bottom: 6px; }
+select.status { border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; background: var(--panel); }
+.box { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.mail-body { white-space: pre-wrap; }
+.events { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.events li { display: grid; grid-template-columns: 92px 1fr; gap: 8px; color: var(--muted); }
+.events li span:first-child { color: var(--faint); font-size: 12px; }
+textarea { width: 100%; min-height: 90px; border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; resize: vertical; }
+.x { margin-left: auto; border: 0; background: none; cursor: pointer; font-size: 20px; color: var(--muted); line-height: 1; }
+a { color: #5b4bd5; }
+
+/* connect */
+.connect { max-width: 520px; margin: 60px auto; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 24px; box-shadow: var(--shadow); }
+.connect h2 { margin: 0 0 6px; font-size: 18px; }
+.connect p { color: var(--muted); }
+.connect input { width: 100%; padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px; margin: 8px 0 12px; }
+.toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: #1f2430; color: #fff; padding: 8px 14px; border-radius: 8px; font-size: 12px; opacity: 0; transition: opacity .2s; z-index: 20; }
+.toast.on { opacity: 1; }
+@media (max-width: 640px) { .top, .toolbar { padding-left: 16px; padding-right: 16px; } .board { padding: 4px 16px 24px; } .kpis { margin-left: 0; } }
 </style>
 </head>
 <body>
-<main>
-  <h1>Application Tracker</h1>
-  <p class="sub" id="sub">Jobs found, resumes sent and where each application stands.</p>
+<header class="top">
+  <div class="title-row">
+    <div class="logo">J</div>
+    <h1>Job Applications</h1>
+    <span class="updated" id="updated"></span>
+  </div>
+  <nav class="tabs"><span class="tab on">Board</span></nav>
+</header>
 
-  <section class="login" id="login" hidden>
-    <p><b>Connect your private log.</b> Paste a GitHub fine-grained token with <i>Contents: read and write</i> on
-      <code>job-applications</code>. It is kept only in this browser and sent only to GitHub.</p>
-    <input id="token" type="password" placeholder="github_pat_..." autocomplete="off">
-    <button class="primary" id="save">Connect</button>
-    <p class="meta" id="err"></p>
-  </section>
+<section class="connect" id="connect" hidden>
+  <h2>Connect your application log</h2>
+  <p>Paste your GitHub fine-grained token (the <code>job-finder</code> one, with Contents read and write on <code>job-applications</code>).
+     It's kept only in this browser and sent only to GitHub.</p>
+  <input id="token" type="password" placeholder="github_pat_…" autocomplete="off">
+  <button class="btn primary" id="save">Connect</button>
+  <p id="err" style="color:#b42318"></p>
+</section>
 
-  <section id="app" hidden>
-    <div class="stats" id="stats"></div>
-    <div class="bar">
-      <input id="q" placeholder="Search company or title">
-      <select id="sort"><option value="found">Newest first</option><option value="fit">Best fit first</option></select>
-      <button id="reload">Refresh</button>
-      <button id="logout">Disconnect</button>
-    </div>
-    <div class="list" id="list"></div>
-  </section>
-</main>
+<div id="app" hidden>
+  <div class="toolbar">
+    <label class="search">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" placeholder="Search company or role">
+    </label>
+    <button class="btn" id="f-mail">✉️ Emailed</button>
+    <button class="btn" id="f-fit">Fit 70+</button>
+    <button class="btn" id="f-skip">Show skipped</button>
+    <button class="btn" id="reload">↻ Refresh</button>
+    <div class="kpis" id="kpis"></div>
+  </div>
+  <main class="board" id="board"></main>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-label="Job details"></aside>
+<div class="toast" id="toast"></div>
+
 <script>
 const REPO = { owner: "MUNIGOUTHAM-REDDY", name: "job-applications" };
-const STATUSES = ["prepared", "approved", "applied", "interview", "offer", "rejected", "skipped", "error"];
-const LABEL = { prepared: "Waiting for you", approved: "Approved", applied: "Applied", interview: "Interview",
-                offer: "Offer", rejected: "Rejected", skipped: "Skipped", error: "Error" };
-let token = null, apps = [], filter = null;
+const COLS = [
+  { id: "prepared",  name: "Waiting for you", color: "#87909e" },
+  { id: "approved",  name: "Approved",        color: "#4466ff" },
+  { id: "applied",   name: "Applied",         color: "#7b68ee" },
+  { id: "interview", name: "Interview",       color: "#f9a03f" },
+  { id: "offer",     name: "Offer",           color: "#2ea44f" },
+  { id: "rejected",  name: "Rejected",        color: "#e5484d" },
+  { id: "skipped",   name: "Skipped",         color: "#4b5563" },
+  { id: "error",     name: "Error",           color: "#b42318" },
+];
+const NAME = Object.fromEntries(COLS.map(c => [c.id, c.name]));
+let token = null, apps = [], openKey = null;
+const F = { mail: false, fit: false, skip: false };
 try { token = localStorage.getItem("gh_token"); } catch (e) {}
+
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const when = s => s ? new Date(s).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) : "";
+const ago = s => { if (!s) return ""; const m = (Date.now() - new Date(s)) / 6e4;
+  return m < 60 ? `${Math.max(1, m | 0)}m ago` : m < 1440 ? `${(m / 60) | 0}h ago` : `${(m / 1440) | 0}d ago`; };
+const toast = t => { const el = $("toast"); el.textContent = t; el.classList.add("on"); setTimeout(() => el.classList.remove("on"), 1800); };
 
 async function gh(path, opts = {}) {
   const r = await fetch("https://api.github.com" + path, { ...opts,
     headers: { Authorization: "Bearer " + token, Accept: "application/vnd.github+json", ...(opts.headers || {}) } });
-  if (!r.ok) throw new Error(r.status + " " + (await r.text()).slice(0, 160));
+  if (!r.ok) throw new Error(r.status + " " + (await r.text()).slice(0, 140));
   return r;
 }
 
 async function load() {
-  $("sub").textContent = "Loading…";
+  $("updated").textContent = "Loading…";
   const q = `query { repository(owner:"${REPO.owner}", name:"${REPO.name}") { object(expression:"HEAD:applications") {
     ... on Tree { entries { name oid object { ... on Blob { text } } } } } } }`;
-  const r = await gh("/graphql", { method: "POST", body: JSON.stringify({ query: q }) });
-  const j = await r.json();
+  const j = await (await gh("/graphql", { method: "POST", body: JSON.stringify({ query: q }) })).json();
   if (j.errors) throw new Error(j.errors[0].message);
-  const entries = j.data.repository?.object?.entries || [];
-  apps = entries.filter(e => e.name.endsWith(".json")).map(e => ({ ...JSON.parse(e.object.text), _sha: e.oid, _file: e.name }));
-  $("sub").textContent = `${apps.length} jobs tracked · updated ${new Date().toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" })}`;
+  apps = (j.data.repository?.object?.entries || []).filter(e => e.name.endsWith(".json"))
+    .map(e => ({ ...JSON.parse(e.object.text), _sha: e.oid, _file: e.name }));
+  $("updated").textContent = "Updated " + new Date().toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" });
   render();
+  if (openKey) openDrawer(openKey);
+}
+
+function visible(a) {
+  const q = $("q").value.toLowerCase();
+  return (!q || (a.company + " " + a.title).toLowerCase().includes(q)) && (!F.mail || a.email) && (!F.fit || (a.fit?.score || 0) >= 70);
 }
 
 function render() {
-  const counts = Object.fromEntries(STATUSES.map(s => [s, 0]));
-  apps.forEach(a => counts[a.status] = (counts[a.status] || 0) + 1);
-  const emailed = apps.filter(a => a.email).length;
-  $("stats").innerHTML = [["all", "All jobs", apps.length], ["emailed", "Emailed", emailed],
-    ...STATUSES.filter(s => s !== "error" || counts.error).map(s => [s, LABEL[s], counts[s]])]
-    .map(([k, l, n]) => `<div class="stat ${filter === k || (!filter && k === "all") ? "on" : ""}" data-k="${k}"><b>${n}</b><span>${l}</span></div>`).join("");
-  document.querySelectorAll(".stat").forEach(el => el.onclick = () => { filter = el.dataset.k === "all" ? null : el.dataset.k; render(); });
+  const n = s => apps.filter(a => a.status === s).length;
+  $("kpis").innerHTML = `<span><b>${apps.length}</b>found</span><span><b>${apps.filter(a => a.email).length}</b>emailed</span>
+    <span><b>${n("applied") + n("interview") + n("offer") + n("rejected")}</b>applied</span><span><b>${n("interview")}</b>interviews</span><span><b>${n("offer")}</b>offers</span>`;
+  const cols = COLS.filter(c => (c.id !== "skipped" || F.skip) && (c.id !== "error" || n("error")));
+  $("board").innerHTML = cols.map(c => {
+    const items = apps.filter(a => a.status === c.id && visible(a)).sort((a, b) => (b.found_at || "").localeCompare(a.found_at || ""));
+    return `<section class="col" data-status="${c.id}">
+      <div class="col-head"><span class="pill" style="background:${c.color}">${c.name}</span><span class="count">${items.length}</span></div>
+      <div class="cards">${items.length ? items.map(card).join("") : `<div class="empty-col">Drop cards here</div>`}</div>
+    </section>`;
+  }).join("");
 
-  const q = $("q").value.toLowerCase();
-  let rows = apps.filter(a => (!filter || (filter === "emailed" ? a.email : a.status === filter))
-    && (!q || (a.company + " " + a.title).toLowerCase().includes(q)));
-  rows.sort($("sort").value === "fit" ? (a, b) => (b.fit?.score || 0) - (a.fit?.score || 0)
-                                      : (a, b) => (b.found_at || "").localeCompare(a.found_at || ""));
-  $("list").innerHTML = rows.length ? rows.map(a => {
-    const fit = a.fit?.score;
-    const fitClass = fit >= 75 ? "good" : fit >= 50 ? "warn" : "bad";
-    return `<article class="row" data-key="${a.key}">
-      <div class="top">
-        <div>
-          <div class="title">${esc(a.title)}</div>
-          <div class="meta">${esc(a.company)} · ${esc(a.location || "")} · ${esc(a.source)} · found ${when(a.found_at)}</div>
-          <div class="chips">
-            ${fit != null ? `<span class="chip ${fitClass}">Fit ${fit}</span>` : ""}
-            <span class="chip">${a.email ? "✉️ Emailed " + esc(a.email.to) : "✉️ " + esc(a.email_skipped || "Not emailed")}</span>
-            ${a.salary_text ? `<span class="chip">${esc(a.salary_text)}</span>` : ""}
-          </div>
-        </div>
-        <div class="actions">
-          <select data-act="status">${STATUSES.map(s => `<option value="${s}" ${s === a.status ? "selected" : ""}>${LABEL[s]}</option>`).join("")}</select>
-          <a href="${esc(a.url)}" target="_blank" rel="noopener">Job</a>
-          ${a.resume ? `<button data-act="pdf">Resume</button>` : ""}
-        </div>
-      </div>
-      <details>
-        <summary>History, email and notes</summary>
-        <ul class="events">${(a.events || []).map(e => `<li>${when(e.at)}: ${esc(e.text)}</li>`).join("")}</ul>
-        ${a.fit ? `<p class="meta">${esc(a.fit.reason)}${a.fit.gaps?.length ? "<br>Gaps: " + esc(a.fit.gaps.join("; ")) : ""}</p>` : ""}
-        ${a.email ? `<p class="meta"><b>${esc(a.email.subject)}</b></p><pre>${esc(a.email.body)}</pre>` : ""}
-        <textarea data-act="notes" placeholder="Notes: who you spoke to, interview dates…">${esc(a.notes || "")}</textarea>
-        <button data-act="save-notes">Save notes</button>
-      </details>
-    </article>`;
-  }).join("") : `<div class="empty">Nothing here yet.</div>`;
-
-  document.querySelectorAll(".row").forEach(row => {
-    const a = apps.find(x => x.key === row.dataset.key);
-    row.querySelector('[data-act="status"]').onchange = e => update(a, { status: e.target.value }, `Marked ${LABEL[e.target.value]} on the dashboard`);
-    row.querySelector('[data-act="save-notes"]').onclick = () => update(a, { notes: row.querySelector('[data-act="notes"]').value }, null);
-    const pdf = row.querySelector('[data-act="pdf"]');
-    if (pdf) pdf.onclick = () => openPdf(a);
+  document.querySelectorAll(".card").forEach(el => {
+    el.onclick = () => openDrawer(el.dataset.key);
+    el.ondragstart = e => { e.dataTransfer.setData("text/plain", el.dataset.key); el.classList.add("dragging"); };
+    el.ondragend = () => el.classList.remove("dragging");
+  });
+  document.querySelectorAll(".col").forEach(col => {
+    col.ondragover = e => { e.preventDefault(); col.classList.add("drop"); };
+    col.ondragleave = () => col.classList.remove("drop");
+    col.ondrop = e => {
+      e.preventDefault(); col.classList.remove("drop");
+      const a = apps.find(x => x.key === e.dataTransfer.getData("text/plain"));
+      if (a && a.status !== col.dataset.status) setStatus(a, col.dataset.status);
+    };
   });
 }
 
+function card(a) {
+  const fit = a.fit?.score, cls = fit >= 75 ? "fit-hi" : fit >= 50 ? "fit-mid" : "fit-lo";
+  return `<article class="card" draggable="true" data-key="${a.key}">
+    <div class="t">${esc(a.title)}</div>
+    <div class="c">${esc(a.company)}${a.location ? " · " + esc(a.location.split(",")[0]) : ""}</div>
+    <div class="tags">
+      ${fit != null ? `<span class="tag ${cls}">Fit ${fit}</span>` : ""}
+      ${a.email ? `<span class="tag mail">Emailed</span>` : ""}
+      <span class="tag">${esc(a.source)}</span>
+    </div>
+    <div class="foot"><span>${ago(a.found_at)}</span><span>${(a.events || []).length} updates</span></div>
+  </article>`;
+}
+
+function openDrawer(key) {
+  const a = apps.find(x => x.key === key); if (!a) return;
+  openKey = key;
+  const col = COLS.find(c => c.id === a.status) || COLS[0];
+  $("drawer").innerHTML = `
+    <div class="d-head">
+      <div class="d-row"><span class="pill" style="background:${col.color}">${col.name}</span><button class="x" id="close" aria-label="Close">×</button></div>
+      <h2>${esc(a.title)}</h2>
+      <div style="color:var(--muted)">${esc(a.company)} · ${esc(a.location || "")} · ${esc(a.source)}</div>
+    </div>
+    <div class="d-body">
+      <div class="d-row">
+        <select class="status" id="d-status">${COLS.map(c => `<option value="${c.id}" ${c.id === a.status ? "selected" : ""}>${c.name}</option>`).join("")}</select>
+        <a class="btn" href="${esc(a.url)}" target="_blank" rel="noopener">Open job ↗</a>
+        ${a.resume ? `<button class="btn" id="d-pdf">Resume PDF</button>` : ""}
+      </div>
+      ${a.fit ? `<div><div class="label">Fit ${a.fit.score}/100</div><div>${esc(a.fit.reason)}</div>
+        ${a.fit.gaps?.length ? `<div style="color:var(--muted);margin-top:6px">Gaps: ${esc(a.fit.gaps.join("; "))}</div>` : ""}</div>` : ""}
+      <div><div class="label">Email</div>${a.email
+        ? `<div class="box"><div style="font-weight:600">${esc(a.email.subject)}</div><div style="color:var(--muted);font-size:12px;margin-bottom:8px">To ${esc(a.email.to)} · ${when(a.email.sent_at)}</div><div class="mail-body">${esc(a.email.body)}</div></div>`
+        : `<div style="color:var(--muted)">Not sent: ${esc(a.email_skipped || "no email found")}</div>`}</div>
+      <div><div class="label">Notes</div><textarea id="d-notes" placeholder="Who you spoke to, interview dates, follow-ups…">${esc(a.notes || "")}</textarea>
+        <button class="btn" id="d-save" style="margin-top:8px">Save notes</button></div>
+      <div><div class="label">History</div><ul class="events">${(a.events || []).slice().reverse().map(e => `<li><span>${when(e.at)}</span><span>${esc(e.text)}</span></li>`).join("")}</ul></div>
+    </div>`;
+  $("drawer").classList.add("on"); $("scrim").classList.add("on");
+  $("close").onclick = closeDrawer;
+  $("d-status").onchange = e => setStatus(a, e.target.value);
+  $("d-save").onclick = () => update(a, { notes: $("d-notes").value }, null).then(ok => ok && toast("Notes saved"));
+  const pdf = $("d-pdf"); if (pdf) pdf.onclick = () => openPdf(a);
+}
+function closeDrawer() { openKey = null; $("drawer").classList.remove("on"); $("scrim").classList.remove("on"); }
+$("scrim").onclick = closeDrawer;
+document.addEventListener("keydown", e => e.key === "Escape" && closeDrawer());
+
+async function setStatus(a, status) {
+  const prev = a.status; a.status = status; render(); if (openKey) openDrawer(openKey);
+  const ok = await update(a, { status }, `Moved to ${NAME[status]} on the board`);
+  if (!ok) { a.status = prev; render(); } else toast(`Moved to ${NAME[status]}`);
+}
+
 async function update(a, changes, eventText) {
-  const rec = { ...a }; delete rec._sha; delete rec._file;
-  Object.assign(rec, changes);
+  const rec = { ...a, ...changes }; delete rec._sha; delete rec._file;
   if (eventText) rec.events = [...(rec.events || []), { at: new Date().toISOString().slice(0, 19) + "+00:00", text: eventText }];
   const bytes = new TextEncoder().encode(JSON.stringify(rec, null, 2) + "\n");
   let bin = ""; bytes.forEach(b => bin += String.fromCharCode(b));
   try {
     const r = await gh(`/repos/${REPO.owner}/${REPO.name}/contents/applications/${a._file}`, { method: "PUT",
-      body: JSON.stringify({ message: `Dashboard: ${a.company} ${Object.keys(changes).join(", ")}`, content: btoa(bin), sha: a._sha }) });
-    const j = await r.json();
-    Object.assign(a, rec, { _sha: j.content.sha });
-    render();
-  } catch (e) {
-    alert("Couldn't save (" + e.message + "). Refresh and try again.");
-  }
+      body: JSON.stringify({ message: `Board: ${a.company} ${Object.keys(changes).join(", ")}`, content: btoa(bin), sha: a._sha }) });
+    Object.assign(a, rec, { _sha: (await r.json()).content.sha });
+    if (openKey === a.key) openDrawer(a.key);
+    return true;
+  } catch (e) { toast("Couldn't save. Refresh and try again."); return false; }
 }
 
 async function openPdf(a) {
@@ -182,14 +281,17 @@ async function openPdf(a) {
   if (w) w.location = url; else location.href = url;
 }
 
+function toggle(id, key) { $(id).onclick = () => { F[key] = !F[key]; $(id).classList.toggle("on", F[key]); render(); }; }
+toggle("f-mail", "mail"); toggle("f-fit", "fit"); toggle("f-skip", "skip");
+$("q").oninput = render;
+$("reload").onclick = () => load().catch(e => $("updated").textContent = "Couldn't load: " + e.message);
+
 function show() {
-  $("login").hidden = !!token; $("app").hidden = !token;
-  if (token) load().catch(e => { $("sub").textContent = "Couldn't load: " + e.message; });
+  $("connect").hidden = !!token; $("app").hidden = !token;
+  if (token) load().catch(e => { $("updated").textContent = "Couldn't load: " + e.message;
+    if (/^401/.test(e.message)) { try { localStorage.removeItem("gh_token"); } catch (x) {} token = null; show(); $("err").textContent = "That token didn't work."; } });
 }
 $("save").onclick = () => { token = $("token").value.trim(); try { localStorage.setItem("gh_token", token); } catch (e) {} show(); };
-$("logout").onclick = () => { token = null; try { localStorage.removeItem("gh_token"); } catch (e) {} show(); };
-$("reload").onclick = () => load().catch(e => $("sub").textContent = "Couldn't load: " + e.message);
-$("q").oninput = render; $("sort").onchange = render;
 show();
 </script>
 </body>
