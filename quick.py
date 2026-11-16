@@ -15,6 +15,8 @@ EXCLUDE, NEAR, FAR, AGENCY_CO = _rx(Q["exclude_titles"]), _rx(Q["near_hsr"]), _r
 INCLUDE = re.compile(Q["include_titles_regex"], re.I)
 AGENCY_TXT = re.compile("|".join(Q["agency_text"]), re.I)
 SCAM_TXT = re.compile("|".join(Q["scam_text"]), re.I)
+NOT_FRESHER = re.compile("|".join(Q["not_fresher_text"]), re.I)
+LI_SENIOR_LEVELS = {"Associate", "Mid-Senior level", "Director", "Executive"}  # LinkedIn's seniority field
 BLR = re.compile(r"bengaluru|bangalore", re.I)
 PART_TIME = re.compile(r"part[- ]?time|freelanc|hourly|per hour|weekends? only|few hours", re.I)
 IST = timezone(timedelta(hours=5, minutes=30))
@@ -76,7 +78,11 @@ def reject_reason(job):
         return why
     job["where"] = place
     if job["exp_min"] is not None and job["exp_min"] > Q["max_experience_min_years"]:
-        return "experience"
+        return "not for freshers"
+    if job["source"] == "LinkedIn" and (job["exp_text"] or "").strip() in LI_SENIOR_LEVELS:
+        return "not for freshers"
+    if NOT_FRESHER.search(job["description"] or ""):
+        return "not for freshers"
     if not part_time and pay and pay < Q["min_monthly_salary_full_time"]:
         return "salary"
     a = age_hours(job)

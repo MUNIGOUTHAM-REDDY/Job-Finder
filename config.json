@@ -446,9 +446,9 @@
     ],
     "naukri_max_details": 20,
     "linkedin_max_results": 40,
-    "linkedin_max_details": 25,
+    "linkedin_max_details": 60,
     "max_age_hours": 48,
-    "max_experience_min_years": 1,
+    "max_experience_min_years": 0,
     "min_monthly_salary_full_time": 22000,
     "max_monthly_part_time_believable": 60000,
     "near_hsr": [
@@ -592,7 +592,33 @@
       "ui",
       "video editor",
       "video editing",
-      "editor"
+      "editor",
+      "ii",
+      "iii",
+      "iv",
+      "l2",
+      "l3",
+      "level 2",
+      "level 3",
+      "tier 2",
+      "tier 3",
+      "team leader",
+      "tl",
+      "supervisor",
+      "specialist",
+      "analyst",
+      "engineer",
+      "consultant",
+      "expert",
+      "experienced",
+      "professional",
+      "officer",
+      "phlebotomist",
+      "radiographer",
+      "technologist",
+      "pharmacy",
+      "medical coder",
+      "coder"
     ],
     "agency_company": [
       "consultant",
@@ -618,7 +644,6 @@
       "workforce"
     ],
     "agency_text": [
-      "walk-?in",
       "job drive",
       "mega drive",
       "hiring drive",
@@ -628,7 +653,8 @@
       "for (?:one of )?our (?:esteemed )?clients?",
       "on behalf of (?:our|a) client",
       "placement (?:agency|services)",
-      "consultancy charges"
+      "consultancy charges",
+      "walk[\\s-]*in"
     ],
     "scam_text": [
       "registration fee",
@@ -661,6 +687,15 @@
       "ghar baithe"
     ],
     "include_titles_regex": "customer|client (?:service|support|care|success|relations)|\\bsupport\\b|help ?desk|service desk|\\bchat\\b|\\bvoice\\b|non[- ]?voice|\\bbpo\\b|\\bkpo\\b|\\bprocess (?:associate|executive|specialist|agent)|back ?office|data entry|operations? (?:associate|executive|assistant|specialist|representative)|\\bops (?:associate|executive)|content (?:moderat\\w*|review\\w*)|moderator|annotat\\w*|label+ing|evaluator|\\brater\\b|transcri\\w*|tele ?call\\w*|tele[- ]?sales|inside sales|sales (?:executive|associate|representative|officer|person)|salesperson|business development (?:associate|executive)|\\bbd[ae]\\b|lead generation|receptionist|front (?:office|desk)|office (?:assistant|coordinator|executive|administrator)|admin(?:istrative)? (?:assistant|executive|associate)|graduate trainee|management trainee|\\btrainee\\b|fresher|\\bkyc\\b|verification|claims|collections?|\\borm\\b|social media|\\btutor|email support|escalation|onboarding (?:associate|specialist|executive)|community (?:associate|moderator)|customer experience|cx (?:associate|executive)|guest relations|retail (?:associate|executive)|store (?:associate|executive)",
-    "digest_max_lines": 15
+    "digest_max_lines": 15,
+    "not_fresher_text": [
+      "experienced (?:candidates|professionals) only",
+      "freshers? (?:are )?not (?:eligible|considered|allowed)",
+      "no freshers",
+      "minimum (?:of )?(?:[1-9]|one|two|three) (?:\\+ )?years?",
+      "at least (?:[1-9]|one|two|three) years?",
+      "(?:[1-9]|one|two|three)\\+? years? of (?:relevant |prior )?experience (?:is )?(?:required|mandatory|must)"
+    ],
+    "_fresher_note": "Freshers only: jobs stating any minimum experience above 0, a LinkedIn level other than Entry level/Internship, or phrases like 'no freshers' are dropped. Titles with seniority or specialist markers are dropped."
   }
 }
