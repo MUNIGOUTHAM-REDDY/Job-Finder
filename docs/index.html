@@ -282,7 +282,8 @@ async function loadInsights() {
   for (const m of j.data.repository.jobs?.entries || [])
     for (const f of (m.object?.entries || []).filter(x => x.name.endsWith(".jsonl")))
       for (const line of (f.object?.text || "").split("\n")) if (line.trim()) archive.push(JSON.parse(line));
-  archive.forEach(r => { if (ov[r.id]) r.outcome = ov[r.id]; });
+  // Quick-job entries saved before 17 Nov had "(Remote)" wrongly appended by the search; it never came from the job.
+  archive.forEach(r => { if (ov[r.id]) r.outcome = ov[r.id]; if (r.track === "quick" && r.location) r.location = r.location.replace(/ \(Remote\)$/, ""); });
   archive.sort((a, b) => (b.seen_at || "").localeCompare(a.seen_at || ""));
   fullArchive = archive; archive = fullArchive.filter(r => trackOf(r) === TRACK);
   renderInsights(); renderJobs();
