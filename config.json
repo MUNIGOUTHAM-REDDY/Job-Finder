@@ -614,7 +614,7 @@
       "workforce"
     ],
     "agency_text": [
-      "walk-?in drive",
+      "walk-?in",
       "job drive",
       "mega drive",
       "hiring drive",
@@ -655,6 +655,8 @@
       "online typing",
       "mobile se kaam",
       "ghar baithe"
-    ]
+    ],
+    "include_titles_regex": "customer|client (?:service|support|care|success|relations)|\\bsupport\\b|help ?desk|service desk|\\bchat\\b|\\bvoice\\b|non[- ]?voice|\\bbpo\\b|\\bkpo\\b|\\bprocess (?:associate|executive|specialist|agent)|back ?office|data entry|operations? (?:associate|executive|assistant|specialist|representative)|\\bops (?:associate|executive)|content (?:moderat\\w*|review\\w*)|moderator|annotat\\w*|label+ing|evaluator|\\brater\\b|transcri\\w*|tele ?call\\w*|tele[- ]?sales|inside sales|sales (?:executive|associate|representative|officer|person)|salesperson|business development (?:associate|executive)|\\bbd[ae]\\b|lead generation|receptionist|front (?:office|desk)|office (?:assistant|coordinator|executive|administrator)|admin(?:istrative)? (?:assistant|executive|associate)|graduate trainee|management trainee|\\btrainee\\b|fresher|\\bkyc\\b|verification|claims|collections?|\\borm\\b|social media|graphic design|ui ?/? ?ux|ux designer|ui designer|video edit\\w*|\\btutor|email support|escalation|onboarding (?:associate|specialist|executive)|community (?:associate|moderator)|customer experience|cx (?:associate|executive)|guest relations|retail (?:associate|executive)|store (?:associate|executive)",
+    "digest_max_lines": 15
   }
 }

@@ -3,7 +3,13 @@
 # GitHub only starts cron workflows every few hours, so one long run does the scheduling itself.
 set -u
 end=$(( $(date +%s) + ${LOOP_SECONDS:-19800} ))
-push() { for i in 1 2 3 4 5; do git pull --rebase -q && git push -q && return 0; sleep $((RANDOM % 8 + 2)); done; return 1; }
+push() {
+  for i in 1 2 3 4 5; do
+    if git pull --rebase -q; then git push -q && return 0; else git rebase --abort 2>/dev/null; fi
+    sleep $((RANDOM % 8 + 2))
+  done
+  return 1
+}
 
 n=0
 while [ "$(date +%s)" -lt "$end" ]; do

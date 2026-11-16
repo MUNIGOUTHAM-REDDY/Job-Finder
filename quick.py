@@ -12,6 +12,7 @@ from core import (CFG, HERE, L, LOC_BLOCKED, LOC_REMOTE, Seen, _inbox_add, _rx, 
 
 Q = CFG["quick"]
 EXCLUDE, NEAR, FAR, AGENCY_CO = _rx(Q["exclude_titles"]), _rx(Q["near_hsr"]), _rx(Q["far_from_hsr"]), _rx(Q["agency_company"])
+INCLUDE = re.compile(Q["include_titles_regex"], re.I)
 AGENCY_TXT = re.compile("|".join(Q["agency_text"]), re.I)
 SCAM_TXT = re.compile("|".join(Q["scam_text"]), re.I)
 BLR = re.compile(r"bengaluru|bangalore", re.I)
@@ -20,7 +21,8 @@ IST = timezone(timedelta(hours=5, minutes=30))
 
 
 def title_ok(title):
-    return bool(title.strip()) and not EXCLUDE.search(title)
+    """Entry-level roles you could start quickly (support, ops, sales, admin, data, design gigs...)."""
+    return bool(INCLUDE.search(title)) and not EXCLUDE.search(title)
 
 
 def location_ok(loc):
@@ -56,7 +58,7 @@ def reject_reason(job):
     text = f"{job['title']}\n{job['description'] or ''}"
     if not title_ok(job["title"]):
         return "title"
-    if job.get("consultant") or AGENCY_CO.search(job["company"] or "") or AGENCY_TXT.search(text):
+    if job.get("consultant") or AGENCY_CO.search(job["company"] or "") or AGENCY_TXT.search(text[:2500]):
         return "agency or job drive"
     if SCAM_TXT.search(text):
         return "possible scam"
@@ -109,20 +111,19 @@ def process(jobs, seen, label):
     _inbox_add("quick.json", [dict(_slim(j), track="quick", part_time=j.get("part_time"), where=j.get("where")) for j in fresh])
 
     # Hourly digest: queue now, send when an hour has passed since the last one.
+    rank = {"remote": 0, "near": 1, "area not stated": 2}
     pending = seen.meta.setdefault("pending", [])
-    pending += [{"line": digest_line(j)} for j in fresh]
+    pending += [{"line": digest_line(j), "rank": rank.get(j.get("where"), 3)} for j in fresh]
     last = seen.meta.get("last_digest")
     if pending and (not last or (now() - datetime.fromisoformat(last)).total_seconds() >= 3300):
-        lines = [p["line"] for p in pending]
-        head = f"💼 <b>Quick jobs</b>  ·  {len(lines)} new  ·  {datetime.now(IST):%I:%M %p}"
-        chunks, cur = [], head
-        for ln in lines:
-            if len(cur) + len(ln) > 3800:
-                chunks.append(cur)
-                cur = "💼 <b>Quick jobs</b> (continued)"
-            cur += "\n\n" + ln
-        chunks.append(cur)
-        if all(tg_send(c) for c in chunks):
+        pending.sort(key=lambda p: p.get("rank", 3))
+        cap = Q.get("digest_max_lines", 15)
+        msg = f"💼 <b>Quick jobs</b>  ·  {len(pending)} new  ·  {datetime.now(IST):%I:%M %p}"
+        for p in pending[:cap]:
+            msg += "\n\n" + p["line"]
+        if len(pending) > cap:
+            msg += f"\n\n+{len(pending) - cap} more on the dashboard (Quick jobs → Board)"
+        if tg_send(msg[:4000]):
             seen.meta["pending"], seen.meta["last_digest"] = [], now().isoformat()
     log(f"{label}: {len(jobs)} checked, {len(fresh)} matched, skipped {reasons}")
     seen.save()
