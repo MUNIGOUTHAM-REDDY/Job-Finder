@@ -223,7 +223,7 @@ This needs four more secrets here: `ANTHROPIC_API_KEY`, `GMAIL_USER`, `GMAIL_APP
 
 ## Quick jobs (second search)
 
-A second search looks for any job that can be started quickly (support, BPO, back office, part-time and similar), for income while the design search continues. It runs every other cycle (~20 min) from `quick.py`, with settings under `quick` in `config.json`:
+A second search looks for any non-design job that can be started quickly (support, BPO, back office, part-time and similar; design roles are left to the main search), for income while the design search continues. It runs every other cycle (~20 min) from `quick.py`, with settings under `quick` in `config.json`:
 
 - **Where:** remote roles open to India, or on-site within about 4–6 km of HSR Layout Sector 7. Postings rarely give coordinates, so this matches locality names (`near_hsr` and `far_from_hsr`). "Bengaluru" with no area is kept and labelled "area not stated".
 - **Pay:** full-time roles must state at least ₹22k a month if they state pay at all. Part-time has no minimum.
