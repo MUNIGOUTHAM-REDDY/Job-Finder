@@ -353,5 +353,308 @@
     "start_hour": 22,
     "end_hour": 7,
     "every_hours": 2
+  },
+  "quick": {
+    "_about": "Second search: any job you can start quickly. Remote, or on-site within ~4-6 km of HSR Layout Sector 7. Alerts arrive as an hourly Telegram digest.",
+    "naukri_queries": [
+      [
+        "customer support",
+        "bangalore"
+      ],
+      [
+        "customer service",
+        "bangalore"
+      ],
+      [
+        "bpo",
+        "bangalore"
+      ],
+      [
+        "back office",
+        "bangalore"
+      ],
+      [
+        "telecaller",
+        "bangalore"
+      ],
+      [
+        "part time",
+        "bangalore"
+      ],
+      [
+        "fresher",
+        "hsr layout"
+      ],
+      [
+        "fresher",
+        "koramangala"
+      ],
+      [
+        "work from home customer support",
+        ""
+      ],
+      [
+        "work from home chat support",
+        ""
+      ],
+      [
+        "work from home part time",
+        ""
+      ],
+      [
+        "content moderator",
+        ""
+      ],
+      [
+        "data annotation",
+        ""
+      ],
+      [
+        "work from home graphic designer",
+        ""
+      ]
+    ],
+    "linkedin_queries": [
+      [
+        "customer support",
+        "Bengaluru"
+      ],
+      [
+        "customer service",
+        "Bengaluru"
+      ],
+      [
+        "back office",
+        "Bengaluru"
+      ],
+      [
+        "part time",
+        "Bengaluru"
+      ],
+      [
+        "customer support",
+        "Remote"
+      ],
+      [
+        "chat support",
+        "Remote"
+      ],
+      [
+        "content moderator",
+        "Remote"
+      ],
+      [
+        "part time",
+        "Remote"
+      ]
+    ],
+    "naukri_max_details": 20,
+    "linkedin_max_results": 40,
+    "linkedin_max_details": 25,
+    "max_age_hours": 48,
+    "max_experience_min_years": 1,
+    "min_monthly_salary_full_time": 22000,
+    "max_monthly_part_time_believable": 60000,
+    "near_hsr": [
+      "hsr",
+      "hsr layout",
+      "koramangala",
+      "btm",
+      "btm layout",
+      "bellandur",
+      "agara",
+      "madiwala",
+      "bommanahalli",
+      "silk board",
+      "jakkasandra",
+      "teachers colony",
+      "ejipura",
+      "haralur",
+      "kasavanahalli",
+      "kudlu",
+      "kudlu gate",
+      "hosapalya",
+      "parappana agrahara",
+      "singasandra",
+      "garvebhavi palya",
+      "iblur",
+      "ibbalur",
+      "hulimavu",
+      "bilekahalli",
+      "arekere",
+      "begur",
+      "mangammanapalya",
+      "bandepalya",
+      "somasundarapalya",
+      "kaikondrahalli",
+      "sarjapur road",
+      "jayanagar",
+      "jp nagar",
+      "j p nagar",
+      "adugodi",
+      "wilson garden",
+      "bommanahalli",
+      "hongasandra",
+      "roopena agrahara",
+      "rupena agrahara",
+      "hosur road",
+      "outer ring road",
+      "orr"
+    ],
+    "far_from_hsr": [
+      "whitefield",
+      "electronic city",
+      "electronics city",
+      "marathahalli",
+      "brookefield",
+      "kundalahalli",
+      "mahadevapura",
+      "kr puram",
+      "k r puram",
+      "hebbal",
+      "manyata",
+      "yelahanka",
+      "hennur",
+      "indiranagar",
+      "domlur",
+      "mg road",
+      "m g road",
+      "malleshwaram",
+      "rajajinagar",
+      "yeshwanthpur",
+      "peenya",
+      "vijayanagar",
+      "kengeri",
+      "mysore road",
+      "banashankari",
+      "basavanagudi",
+      "rt nagar",
+      "jalahalli",
+      "nagawara",
+      "thanisandra",
+      "bannerghatta road",
+      "devanahalli",
+      "hoskote",
+      "attibele",
+      "chandapura",
+      "bidadi",
+      "jigani",
+      "sarjapur",
+      "varthur",
+      "kadugodi",
+      "cv raman nagar",
+      "ulsoor",
+      "shivajinagar",
+      "cunningham road",
+      "majestic"
+    ],
+    "exclude_titles": [
+      "senior",
+      "sr",
+      "lead",
+      "manager",
+      "head",
+      "director",
+      "vp",
+      "principal",
+      "architect",
+      "nurse",
+      "doctor",
+      "pharmacist",
+      "driver",
+      "delivery",
+      "rider",
+      "security guard",
+      "guard",
+      "technician",
+      "mechanic",
+      "electrician",
+      "plumber",
+      "welder",
+      "fitter",
+      "cook",
+      "chef",
+      "housekeeping",
+      "warehouse",
+      "picker",
+      "packer",
+      "teacher",
+      "professor",
+      "lecturer",
+      "chartered accountant",
+      "lawyer",
+      "advocate",
+      "physiotherapist",
+      "dentist",
+      "intern",
+      "internship",
+      "unpaid"
+    ],
+    "agency_company": [
+      "consultant",
+      "consultants",
+      "consultancy",
+      "consulting",
+      "placement",
+      "placements",
+      "staffing",
+      "manpower",
+      "recruitment",
+      "recruiters",
+      "recruiting",
+      "hr services",
+      "hr solutions",
+      "hr consultancy",
+      "human resource",
+      "job hub",
+      "jobs hub",
+      "career point",
+      "careers point",
+      "talent solutions",
+      "workforce"
+    ],
+    "agency_text": [
+      "walk-?in drive",
+      "job drive",
+      "mega drive",
+      "hiring drive",
+      "bulk hiring",
+      "mass hiring",
+      "hiring for (?:a |one of )?(?:the )?(?:top|leading|reputed|renowned|mnc|our client)",
+      "for (?:one of )?our (?:esteemed )?clients?",
+      "on behalf of (?:our|a) client",
+      "placement (?:agency|services)",
+      "consultancy charges"
+    ],
+    "scam_text": [
+      "registration fee",
+      "registration charges?",
+      "security deposit",
+      "refundable (?:deposit|amount)",
+      "training fee",
+      "processing fee",
+      "joining fee",
+      "kit fee",
+      "pay (?:rs\\.?|₹|inr)?\\s?\\d+ (?:to|for) (?:join|register|start)",
+      "investment required",
+      "earn (?:up ?to )?(?:rs\\.?|₹|inr)?\\s?[\\d,]+ (?:per|a|/) ?(?:day|week)",
+      "daily payout",
+      "copy[ -]paste",
+      "form filling",
+      "captcha",
+      "sms sending",
+      "ad posting",
+      "like (?:and|&) subscribe",
+      "youtube likes",
+      "whatsapp only",
+      "contact (?:on|via) telegram",
+      "telegram only",
+      "no interview",
+      "without interview",
+      "typing work",
+      "online typing",
+      "mobile se kaam",
+      "ghar baithe"
+    ]
   }
 }

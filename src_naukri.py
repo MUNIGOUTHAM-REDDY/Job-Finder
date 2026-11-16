@@ -65,7 +65,11 @@ def _add_detail(job, d):
         job["rating"] = f"{amb['AggregateRating']} ({amb.get('ReviewsCount', '?')} reviews)"
 
 
-def fetch(seen):
+def fetch(seen, queries=None, title_filter=None, detail_cap=None, pages_per_query=None, job_age_days=1):
+    """queries: [(keyword, city or "")]; defaults to the design keywords across India."""
+    title_filter = title_filter or title_ok
+    queries = queries or [(kw, "") for kw in CFG["search_keywords"]]
+    pages_per_query = pages_per_query or CFG.get("naukri_pages_per_keyword", 1)
     from playwright.sync_api import sync_playwright
 
     jobs = {}
@@ -77,25 +81,26 @@ def fetch(seen):
         )
         page = ctx.new_page()
         try:
-            pages = [(kw, n) for kw in CFG["search_keywords"] for n in range(1, CFG.get("naukri_pages_per_keyword", 1) + 1)]
-            for kw, n in pages:
-                slug = re.sub(r"\s+", "-", kw.strip()) + "-jobs" + ("" if n == 1 else f"-{n}")
-                url = f"https://www.naukri.com/{slug}?k={urllib.parse.quote(kw)}&sort=f&jobAge=1"
+            pages = [(kw, city, n) for kw, city in queries for n in range(1, pages_per_query + 1)]
+            for kw, city, n in pages:
+                slug = re.sub(r"\s+", "-", kw.strip().lower()) + "-jobs" + (f"-in-{city}" if city else "") + ("" if n == 1 else f"-{n}")
+                url = f"https://www.naukri.com/{slug}?k={urllib.parse.quote(kw)}" + (f"&l={urllib.parse.quote(city)}" if city else "") \
+                      + f"&sort=f&jobAge={job_age_days}"
                 try:
                     with page.expect_response(lambda r: "jobapi/v3/search" in r.url, timeout=30000) as resp:
                         page.goto(url, wait_until="domcontentloaded", timeout=45000)
                     for j in resp.value.json().get("jobDetails", []):
                         job = _from_search(j)
-                        if title_ok(job["title"]) and not seen.has(job):
+                        if title_filter(job["title"]) and not seen.has(job):
                             jobs.setdefault(job["id"], job)
                 except Exception as e:
-                    log(f"  naukri search '{kw}' page {n}: {e}")
+                    log(f"  naukri search '{kw}' {city} page {n}: {e}")
                 page.wait_for_timeout(1500)
 
             # Only open detail pages for fresh, plausible matches (they cost ~5 s each).
             ranked = sorted(jobs.values(), key=lambda j: j["posted_at"] or datetime.min.replace(tzinfo=timezone.utc),
                             reverse=True)
-            for job in ranked[:CFG["naukri_max_details_per_run"]]:
+            for job in ranked[:CFG["naukri_max_details_per_run"] if detail_cap is None else detail_cap]:
                 try:
                     with page.expect_response(lambda r: "jobapi/v4/job/" in r.url, timeout=30000) as resp:
                         page.goto(job["url"], wait_until="domcontentloaded", timeout=45000)

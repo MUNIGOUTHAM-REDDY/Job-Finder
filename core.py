@@ -303,9 +303,9 @@ def handoff(jobs):
     _inbox_add("jobs.json", [_slim(j) for j in jobs])
 
 
-def record_found(jobs_with_outcome):
-    """Queue every design job seen this run (alerted or filtered out) for the job archive in job-applications."""
-    _inbox_add("found.json", [dict(_slim(j), outcome=o, seen_at=now().isoformat(timespec="seconds"))
+def record_found(jobs_with_outcome, track="design"):
+    """Queue every job seen this run (alerted or filtered out) for the job archive in job-applications."""
+    _inbox_add("found.json", [dict(_slim(j), outcome=o, track=track, seen_at=now().isoformat(timespec="seconds"))
                               for j, o in jobs_with_outcome])
 
 

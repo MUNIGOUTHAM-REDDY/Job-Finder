@@ -27,10 +27,10 @@ def _applicants(text):
     return int(m.group(1).replace(",", "")) if m else None
 
 
-def _search(keyword, params, window_secs):
+def _search(keyword, params, window_secs, max_results=None):
     """Every result page (10 cards each) within the window. A generator, so cards from
     earlier pages are kept if a later page gets rate limited."""
-    for start in range(0, CFG["linkedin_max_results_per_keyword"], 10):
+    for start in range(0, max_results or CFG["linkedin_max_results_per_keyword"], 10):
         page = _search_page(keyword, params, window_secs, start)
         yield from page
         if len(page) < 10:
@@ -56,17 +56,19 @@ def _search_page(keyword, params, window_secs, start):
     return cards
 
 
-def fetch(seen, last_run):
+def fetch(seen, last_run, searches=None, title_filter=None, loc_filter=None, max_results=None, detail_cap=None):
+    """searches: [(keyword, place_label, params)]; defaults to the design keywords across PLACES."""
     # Look back to the last successful run (covers Mac sleep), at least 30 min, at most 24 h;
     # the very first run looks back the full 24 h.
     window = 86400 if not last_run else int(min(86400, max(1800, (now() - last_run).total_seconds() + 600)))
+    searches = searches or [(kw, label, params) for kw in CFG["search_keywords"] for label, params in PLACES]
+    title_filter, loc_filter = title_filter or title_ok, loc_filter or location_ok
     cards, ok = {}, True
-    for kw in CFG["search_keywords"]:
-        for label, params in PLACES:
+    for kw, label, params in searches:
             if not ok:
                 break
             try:
-                for c in _search(kw, params, window):
+                for c in _search(kw, params, window, max_results):
                     c["place"] = label
                     cards.setdefault(c["id"], c)
             except Exception as e:
@@ -81,15 +83,15 @@ def fetch(seen, last_run):
         job = new_job(id=f"li:{c['id']}", source="LinkedIn", title=c["title"], company=c["company"],
                       location=loc, url=f"https://www.linkedin.com/jobs/view/{c['id']}",
                       posted_at=parse_relative(c["posted"]))
-        if title_ok(job["title"]) and location_ok(loc) and not seen.has(job):
+        if title_filter(job["title"]) and loc_filter(loc) and not seen.has(job):
             candidates.append(job)
-    return list(_details(candidates, seen)), ok
+    return list(_details(candidates, seen, detail_cap)), ok
 
 
-def _details(jobs, seen):
+def _details(jobs, seen, cap=None):
     # Newest first get details; any beyond the cap still go out, just without applicant counts.
     jobs = sorted(jobs, key=lambda j: j["posted_at"] or now(), reverse=True)
-    cap = CFG["linkedin_max_details_per_run"]
+    cap = CFG["linkedin_max_details_per_run"] if cap is None else cap
     yield from jobs[cap:]
     for job in jobs[:cap]:
         try:

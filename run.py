@@ -68,6 +68,12 @@ def cloud():
     process(src_ats.fetch(), seen, "company sites", company_platforms())
 
 
+def quick():
+    """Second search: quick-income jobs (remote or near HSR Layout), hourly digest."""
+    import quick as q
+    q.run()
+
+
 def test():
     job = new_job(id="test", source="Naukri", title="UI/UX Designer (sample alert)", company="Test Company",
                   location="Indiranagar, Bengaluru", url="https://www.naukri.com", exp_text="1-3 Yrs",
@@ -82,4 +88,4 @@ if __name__ == "__main__":
     if sys.argv[1:2] != ["--test"]:
         relay_buttons()
     {"--mac": feeds, "--feeds": lambda: feeds("seen-feeds.json", night_mode=False),
-     "--cloud": cloud, "--test": test}.get(next(iter(sys.argv[1:]), ""), lambda: print(__doc__))()
+     "--cloud": cloud, "--quick": quick, "--test": test}.get(next(iter(sys.argv[1:]), ""), lambda: print(__doc__))()
