@@ -9,7 +9,7 @@
 import sys
 from datetime import datetime, timedelta, timezone
 
-from core import CFG, HERE, Seen, format_alert, load_env, log, new_job, now, process, tg_send
+from core import CFG, HERE, Seen, format_alert, load_env, log, new_job, now, process, relay_buttons, tg_send
 
 IST = timezone(timedelta(hours=5, minutes=30))
 
@@ -79,5 +79,7 @@ def test():
 
 if __name__ == "__main__":
     load_env()
+    if sys.argv[1:2] != ["--test"]:
+        relay_buttons()
     {"--mac": feeds, "--feeds": lambda: feeds("seen-feeds.json", night_mode=False),
      "--cloud": cloud, "--test": test}.get(next(iter(sys.argv[1:]), ""), lambda: print(__doc__))()

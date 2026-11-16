@@ -274,6 +274,76 @@ def enrich_contacts(job):
     return job
 
 
+# --- hand-off to the private job-applications worker -----------------------------------
+
+WORKER_REPO = "MUNIGOUTHAM-REDDY/job-applications"
+
+
+def dispatch(event_type, payload):
+    """Trigger the private worker. Needs DISPATCH_TOKEN (fine-grained, Contents: read and write on WORKER_REPO)."""
+    token = os.environ.get("DISPATCH_TOKEN")
+    if not token:
+        return False
+    req = urllib.request.Request(f"https://api.github.com/repos/{WORKER_REPO}/dispatches",
+                                 json.dumps({"event_type": event_type, "client_payload": payload}).encode(),
+                                 {"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"})
+    try:
+        urllib.request.urlopen(req, timeout=20)
+        return True
+    except Exception as e:
+        log(f"dispatch {event_type} failed:", e)
+        return False
+
+
+def handoff(jobs):
+    """Send alerted jobs to the worker, which tailors a resume, emails the contact and asks in Telegram."""
+    def slim(j):
+        d = {k: j[k] for k in ("id", "source", "title", "company", "location", "url", "exp_text", "salary_text",
+                               "salary_min_lpa", "salary_max_lpa", "applicants", "consultant", "contacts")}
+        d["posted_at"] = j["posted_at"].isoformat() if j["posted_at"] else None
+        d["description"] = (j["description"] or "")[:6000]
+        return d
+    for i in range(0, len(jobs), 3):
+        dispatch("new-jobs", {"jobs": [slim(j) for j in jobs[i:i + 3]]})
+
+
+def relay_buttons():
+    """Pass Approve/Skip taps from Telegram to the worker. Runs at the start of every check."""
+    token = os.environ.get("TG_BOT_TOKEN")
+    if not (token and os.environ.get("DISPATCH_TOKEN")):
+        return
+    api = f"https://api.telegram.org/bot{token}/"
+    try:
+        updates = json.loads(http_get(api + "getUpdates?allowed_updates=%5B%22callback_query%22%5D", timeout=15))["result"]
+    except Exception as e:
+        log("telegram getUpdates failed:", e)
+        return
+    for u in updates:
+        q = u.get("callback_query")
+        if not q or "|" not in q.get("data", ""):
+            continue
+        kind, key = q["data"].split("|", 1)
+        action = {"ap": "approve", "sk": "skip"}.get(kind)
+        if not action or not dispatch("decision", {"key": key, "action": action}):
+            continue
+        label = "✅ Approved" if action == "approve" else "⏭ Skipped"
+        msg = q.get("message") or {}
+        for method, fields in (("answerCallbackQuery", {"callback_query_id": q["id"], "text": label}),
+                               ("editMessageReplyMarkup", {"chat_id": msg.get("chat", {}).get("id"),
+                                                           "message_id": msg.get("message_id"),
+                                                           "reply_markup": json.dumps({"inline_keyboard": [[
+                                                               {"text": label, "callback_data": "done"}]]})})):
+            try:
+                urllib.request.urlopen(api + method, urllib.parse.urlencode(fields).encode(), timeout=15)
+            except Exception:
+                pass  # taps older than a few minutes can't be answered; the decision still goes through
+    if updates:
+        try:
+            http_get(api + f"getUpdates?offset={updates[-1]['update_id'] + 1}&timeout=0", timeout=15)
+        except Exception:
+            pass
+
+
 # --- telegram ----------------------------------------------------------------------
 
 def tg_send(text, silent=False):
@@ -400,11 +470,14 @@ def process(jobs, seen, label, platforms):
                  for name, key, note in platforms]
         tg_send(f"🔍 <b>No new matching roles</b>  ·  {datetime.now(timezone(timedelta(hours=5, minutes=30))):%I:%M %p}\n"
                 + "\n".join(lines), silent=True)
+    sent = []
     for j in fresh:
         enrich_contacts(j)
         if tg_send(format_alert(j)):
             seen.add(j)
+            sent.append(j)
         time.sleep(1.1)  # Telegram allows ~1 message/second per chat
+    handoff(sent)
     log(f"{label}: {len(jobs)} checked, {len(fresh)} alerted, skipped {reasons}")
     seen.save()
     return fresh
