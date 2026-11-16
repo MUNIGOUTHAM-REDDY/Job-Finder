@@ -469,13 +469,17 @@ def process(jobs, seen, label, platforms):
         tg_send(f"<b>Job Finder is live</b>  ·  {e_(label)}\n"
                 f"{len(fresh)} matching role{'s' if len(fresh) != 1 else ''} open right now"
                 + (", listed below." if fresh else ". New ones will arrive here as they're posted."))
-    if not fresh and not seen.first_run:
+    last_quiet = seen.meta.get("last_quiet")
+    quiet_due = not last_quiet or (now() - datetime.fromisoformat(last_quiet)).total_seconds() >= 3300
+    if not fresh and not seen.first_run and quiet_due:
+        seen.meta["last_quiet"] = now().isoformat()
         counts = {}
         for j in jobs:
             counts[j["source"]] = counts.get(j["source"], 0) + 1
         lines = [f"• {e_(name)}  ·  {counts.get(key, 0)} design roles checked" + (f"  <i>({e_(note)})</i>" if note else "")
                  for name, key, note in platforms]
-        tg_send(f"🔍 <b>No new matching roles</b>  ·  {datetime.now(timezone(timedelta(hours=5, minutes=30))):%I:%M %p}\n"
+        tg_send(f"🔍 <b>No new matching roles</b>  ·  {e_(label)}  ·  "
+                f"{datetime.now(timezone(timedelta(hours=5, minutes=30))):%I:%M %p}\n"
                 + "\n".join(lines), silent=True)
     sent = []
     for j in fresh:

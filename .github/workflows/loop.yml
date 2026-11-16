@@ -1,0 +1,46 @@
+name: Job Finder (every 10 min)
+# One long run checks every 10 minutes for ~5.5 hours, then starts the next run.
+# The cron below is only a backup in case the chain ever stops.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 */2 * * *"
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: job-finder-loop
+  cancel-in-progress: false
+jobs:
+  loop:
+    runs-on: ubuntu-24.04  # Playwright 1.55 cannot install browsers on 26.04
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: MUNIGOUTHAM-REDDY/job-applications
+          token: ${{ secrets.DISPATCH_TOKEN }}
+          path: apps
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q playwright==1.55.0 anthropic fpdf2 && playwright install --with-deps chrome
+      - name: Check every 10 minutes
+        env:
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: |
+          for d in . apps; do
+            git -C $d config user.name "job-finder-bot"
+            git -C $d config user.email "job-finder-bot@users.noreply.github.com"
+          done
+          ./loop.sh
+      - name: Start the next run
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run loop.yml -R ${{ github.repository }}

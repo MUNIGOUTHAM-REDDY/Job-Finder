@@ -47,7 +47,7 @@ Each job is sent once. The bot remembers what it has sent for 21 days. If a role
 
 ## How it works
 
-Two checks run on GitHub Actions:
+Two checks run on GitHub Actions. GitHub only starts scheduled workflows every few hours, so one long-running workflow (`loop.yml`, "Job Finder (every 10 min)") runs both checks every 10 minutes for about 5½ hours and then starts its next run. Its two-hourly cron is only a backup:
 
 | Check | Sites | How often |
 |---|---|---|
@@ -61,7 +61,9 @@ Each check:
 3. Sends new matches to Telegram.
 4. Saves the jobs it has sent to a file in `state/` and commits that file back to the repo, so the next run doesn't repeat them.
 
-GitHub sometimes starts scheduled runs a few minutes late, especially at busy times. "Every 10 minutes" usually means every 10–20 minutes.
+Each check can also be run by hand from the **Actions** tab (**LinkedIn + Naukri check**, **Company sites check**).
+
+The quiet "No new matching roles" message is sent at most once an hour per check, and says which check it's from.
 
 You can also run the LinkedIn + Naukri check on a Mac. This is optional, either as a backup or instead of the cloud. See [Optional: run on a Mac](#optional-run-on-a-mac).
 
