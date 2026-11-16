@@ -23,7 +23,33 @@ jobs:
         env:
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
           TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
-          DISPATCH_TOKEN: ${{ secrets.DISPATCH_TOKEN }}
+      # Application worker: tailored resume, email, Telegram approval. Code and log live in the private repo.
+      - name: Get application worker
+        if: always() && hashFiles('inbox/*.json') != ''
+        uses: actions/checkout@v4
+        with:
+          repository: MUNIGOUTHAM-REDDY/job-applications
+          token: ${{ secrets.DISPATCH_TOKEN }}
+          path: apps
+      - name: Prepare applications
+        if: always() && hashFiles('inbox/*.json') != ''
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+        run: |
+          pip install -q anthropic fpdf2
+          python apps/worker.py inbox inbox
+          cd apps
+          git config user.name "job-applications-bot"
+          git config user.email "job-applications-bot@users.noreply.github.com"
+          git add applications resumes 2>/dev/null || true
+          git diff --cached --quiet && exit 0
+          git commit -q -m "Update applications"
+          for i in 1 2 3 4 5; do git pull --rebase -q && git push -q && exit 0; sleep $((RANDOM % 8 + 2)); done
+          exit 1
       - name: Save seen jobs
         run: |
           git config user.name "job-finder-bot"

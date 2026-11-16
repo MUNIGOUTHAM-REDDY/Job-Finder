@@ -4,3 +4,5 @@
 logs/
 state/seen-mac.json
 __pycache__/
+inbox/
+apps/

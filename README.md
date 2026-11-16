@@ -207,16 +207,16 @@ The repo gets a small "Update seen jobs" commit after most runs. That's the bot 
 
 ## Auto-apply and the dashboard
 
-Each alerted job is also passed to a private repo, `job-applications`, which:
+After each check, the application worker (code and log in the private `job-applications` repo) runs in the same GitHub job and:
 
 1. Tailors the resume to the job with the Claude API, using only facts from `profile.json` there, and makes a one-page PDF.
 2. Emails that PDF to the address in the job post (fit 50+, at most 20 a day, from Gmail).
-3. Sends the PDF to Telegram with **Approve** and **Skip** buttons. Taps are picked up by the next check here (within about 10–15 minutes).
+3. Sends the PDF to Telegram with **Approve** and **Skip** buttons. Taps are picked up by the next check.
 4. Logs every step, one file per job, in that private repo.
 
 The **dashboard** is `docs/index.html`, published with GitHub Pages. It has no data in it: when opened, it asks for a GitHub token and reads the log from the private repo, so your applications stay private. You can change a job's status (Applied, Interview, Offer, Rejected) and keep notes there.
 
-This needs one extra secret here: `DISPATCH_TOKEN`, a fine-grained token with **Contents: read and write** on `job-applications` only. Without it, the finder works as before and nothing is passed on.
+This needs four more secrets here: `ANTHROPIC_API_KEY`, `GMAIL_USER`, `GMAIL_APP_PASSWORD` and `DISPATCH_TOKEN` (a fine-grained token with **Contents: read and write** on `job-applications` only, used to fetch the worker and save the log). The worker runs here rather than in the private repo because GitHub Actions is free for public repos.
 
 ---
 

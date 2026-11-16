@@ -274,43 +274,37 @@ def enrich_contacts(job):
     return job
 
 
-# --- hand-off to the private job-applications worker -----------------------------------
+# --- hand-off to the application worker ------------------------------------------------
+# The worker (worker.py in the private job-applications repo) runs right after this check, in the same
+# GitHub job. These functions only leave it an inbox: new jobs and Approve/Skip taps from Telegram.
 
-WORKER_REPO = "MUNIGOUTHAM-REDDY/job-applications"
+INBOX = HERE / "inbox"
 
 
-def dispatch(event_type, payload):
-    """Trigger the private worker. Needs DISPATCH_TOKEN (fine-grained, Contents: read and write on WORKER_REPO)."""
-    token = os.environ.get("DISPATCH_TOKEN")
-    if not token:
-        return False
-    req = urllib.request.Request(f"https://api.github.com/repos/{WORKER_REPO}/dispatches",
-                                 json.dumps({"event_type": event_type, "client_payload": payload}).encode(),
-                                 {"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"})
-    try:
-        urllib.request.urlopen(req, timeout=20)
-        return True
-    except Exception as e:
-        log(f"dispatch {event_type} failed:", e)
-        return False
+def _inbox_add(name, items):
+    if not items or not os.environ.get("GITHUB_ACTIONS"):  # the worker only runs in the cloud checks
+        return
+    INBOX.mkdir(exist_ok=True)
+    f = INBOX / name
+    old = json.loads(f.read_text()) if f.exists() else []
+    f.write_text(json.dumps(old + items, default=str))
 
 
 def handoff(jobs):
-    """Send alerted jobs to the worker, which tailors a resume, emails the contact and asks in Telegram."""
+    """Queue alerted jobs for the worker, which tailors a resume, emails the contact and asks in Telegram."""
     def slim(j):
         d = {k: j[k] for k in ("id", "source", "title", "company", "location", "url", "exp_text", "salary_text",
                                "salary_min_lpa", "salary_max_lpa", "applicants", "consultant", "contacts")}
         d["posted_at"] = j["posted_at"].isoformat() if j["posted_at"] else None
         d["description"] = (j["description"] or "")[:6000]
         return d
-    for i in range(0, len(jobs), 3):
-        dispatch("new-jobs", {"jobs": [slim(j) for j in jobs[i:i + 3]]})
+    _inbox_add("jobs.json", [slim(j) for j in jobs])
 
 
 def relay_buttons():
-    """Pass Approve/Skip taps from Telegram to the worker. Runs at the start of every check."""
+    """Collect Approve/Skip taps from Telegram for the worker. Runs at the start of every check."""
     token = os.environ.get("TG_BOT_TOKEN")
-    if not (token and os.environ.get("DISPATCH_TOKEN")):
+    if not token or not os.environ.get("GITHUB_ACTIONS"):
         return
     api = f"https://api.telegram.org/bot{token}/"
     try:
@@ -318,14 +312,16 @@ def relay_buttons():
     except Exception as e:
         log("telegram getUpdates failed:", e)
         return
+    decisions = []
     for u in updates:
         q = u.get("callback_query")
         if not q or "|" not in q.get("data", ""):
             continue
         kind, key = q["data"].split("|", 1)
         action = {"ap": "approve", "sk": "skip"}.get(kind)
-        if not action or not dispatch("decision", {"key": key, "action": action}):
+        if not action:
             continue
+        decisions.append({"key": key, "action": action})
         label = "✅ Approved" if action == "approve" else "⏭ Skipped"
         msg = q.get("message") or {}
         for method, fields in (("answerCallbackQuery", {"callback_query_id": q["id"], "text": label}),
@@ -337,6 +333,7 @@ def relay_buttons():
                 urllib.request.urlopen(api + method, urllib.parse.urlencode(fields).encode(), timeout=15)
             except Exception:
                 pass  # taps older than a few minutes can't be answered; the decision still goes through
+    _inbox_add("decisions.json", decisions)
     if updates:
         try:
             http_get(api + f"getUpdates?offset={updates[-1]['update_id'] + 1}&timeout=0", timeout=15)
