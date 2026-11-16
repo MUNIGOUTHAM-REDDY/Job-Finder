@@ -951,6 +951,146 @@
       "hsr sector": [
         12.9116,
         77.6389
+      ],
+      "sahakara nagar": [
+        13.062,
+        77.587
+      ],
+      "sahakar nagar": [
+        13.062,
+        77.587
+      ],
+      "kodigehalli": [
+        13.056,
+        77.58
+      ],
+      "vidyaranyapura": [
+        13.077,
+        77.558
+      ],
+      "banaswadi": [
+        13.013,
+        77.648
+      ],
+      "kammanahalli": [
+        13.015,
+        77.637
+      ],
+      "hrbr layout": [
+        13.023,
+        77.64
+      ],
+      "horamavu": [
+        13.028,
+        77.662
+      ],
+      "ramamurthy nagar": [
+        13.013,
+        77.677
+      ],
+      "frazer town": [
+        12.999,
+        77.615
+      ],
+      "jeevan bhima nagar": [
+        12.969,
+        77.656
+      ],
+      "old airport road": [
+        12.96,
+        77.65
+      ],
+      "murugeshpalya": [
+        12.958,
+        77.657
+      ],
+      "kaggadasapura": [
+        12.985,
+        77.681
+      ],
+      "bannerghatta": [
+        12.8,
+        77.577
+      ],
+      "uttarahalli": [
+        12.905,
+        77.545
+      ],
+      "kumaraswamy layout": [
+        12.907,
+        77.562
+      ],
+      "padmanabhanagar": [
+        12.916,
+        77.556
+      ],
+      "rr nagar": [
+        12.925,
+        77.515
+      ],
+      "rajarajeshwari nagar": [
+        12.925,
+        77.515
+      ],
+      "nagarbhavi": [
+        12.96,
+        77.51
+      ],
+      "basaveshwara nagar": [
+        12.99,
+        77.538
+      ],
+      "mathikere": [
+        13.033,
+        77.563
+      ],
+      "sanjay nagar": [
+        13.035,
+        77.577
+      ],
+      "bellandur gate": [
+        12.923,
+        77.67
+      ],
+      "panathur": [
+        12.939,
+        77.709
+      ],
+      "kadubeesanahalli": [
+        12.937,
+        77.697
+      ],
+      "marathahalli bridge": [
+        12.956,
+        77.701
+      ],
+      "electronic city phase 1": [
+        12.8452,
+        77.6602
+      ],
+      "electronic city phase 2": [
+        12.844,
+        77.676
+      ],
+      "bommasandra": [
+        12.816,
+        77.696
+      ],
+      "anekal": [
+        12.711,
+        77.695
+      ],
+      "yelahanka new town": [
+        13.1,
+        77.59
+      ],
+      "jakkur": [
+        13.078,
+        77.606
+      ],
+      "kengeri satellite town": [
+        12.913,
+        77.487
       ]
     },
     "_areas_note": "Approximate centre of each area (lat, lon). Distances are straight-line from home. Add areas here as they show up.",

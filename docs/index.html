@@ -14,6 +14,7 @@
   color-scheme: light;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { height: 100%; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 13px/1.45 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 button, input, select, textarea { font: inherit; color: inherit; }
@@ -165,6 +166,7 @@ a { color: #5b4bd5; }
     <button class="btn" id="f-mail">✉️ Emailed</button>
     <button class="btn" id="f-fit">Fit 70+</button>
     <button class="btn" id="f-skip">Show skipped</button>
+    <select class="btn" id="bsort" aria-label="Sort cards"><option value="recent">Recent first</option><option value="near">Nearest first</option></select>
     <button class="btn" id="reload">↻ Refresh</button>
     <div class="kpis" id="kpis"></div>
   </div>
@@ -178,6 +180,7 @@ a { color: #5b4bd5; }
       <input id="jq" placeholder="Search role, company or skill">
     </label>
     <select class="btn" id="jsource"><option value="">All sources</option></select>
+    <select class="btn" id="jsort" aria-label="Sort jobs"><option value="recent">Recent first</option><option value="near">Nearest first</option></select>
     <select class="btn" id="jperiod"><option value="1">Last 24 hours</option><option value="7" selected>Last 7 days</option><option value="30">Last 30 days</option><option value="0">All time</option></select>
     <span class="updated" id="jnote" style="margin-left:0"></span>
   </div>
@@ -245,6 +248,33 @@ async function load() {
   render();
   if (openKey) openDrawer(openKey);
 }
+
+// ---- distance from home (areas table lives in config.json, shared with the quick-jobs search) ----
+let HOME = { name: "HSR Layout Sector 7", lat: 12.9106, lon: 77.6395 }, AREAS = [];
+fetch("https://raw.githubusercontent.com/MUNIGOUTHAM-REDDY/Job-Finder/main/config.json", { cache: "no-cache" })
+  .then(r => r.json()).then(c => { HOME = c.quick.home || HOME;
+    AREAS = Object.entries(c.quick.areas || {}).sort((a, b) => b[0].length - a[0].length)
+      .map(([n, ll]) => [n, ll, new RegExp("(?<![a-z])" + n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(?![a-z])", "i")]);
+    render(); renderJobs(); if (openKey) openDrawer(openKey); }).catch(() => {});
+const kmBetween = (a, b, c, d) => { const p = Math.PI / 180, h = Math.sin((c - a) * p / 2) ** 2 + Math.cos(a * p) * Math.cos(c * p) * Math.sin((d - b) * p / 2) ** 2; return 12742 * Math.asin(Math.sqrt(h)); };
+const titleArea = n => n.replace(/\b(hsr|btm|jp|mg|kr|rt|cv)\b/gi, m => m.toUpperCase()).replace(/\b[a-z]/g, m => m.toUpperCase());
+function nearestArea(text) {
+  let best = null;
+  for (const [n, ll, rx] of AREAS) if (rx.test(text)) { const d = kmBetween(HOME.lat, HOME.lon, ll[0], ll[1]); if (!best || d < best.km) best = { area: titleArea(n), km: d }; }
+  return best;
+}
+const REMOTE_RX = /\bremote\b|work from home|\bwfh\b/i;
+function place(r) {  // {kind: "remote" | "km" | "unknown", km, area, rank}
+  if (r.where === "remote" || REMOTE_RX.test(r.location || "")) return { kind: "remote", rank: -1 };
+  if (r.distance_km != null) return { kind: "km", km: r.distance_km, area: titleArea(r.area || ""), rank: r.distance_km };
+  const hit = nearestArea(r.location || "") || (/bengaluru|bangalore/i.test(r.location || "") ? nearestArea((r.description || "").slice(0, 3000)) : null);
+  return hit ? { kind: "km", km: hit.km, area: hit.area, rank: hit.km } : { kind: "unknown", rank: 1e6 };
+}
+function placeLabel(r) {
+  const p = place(r);
+  return p.kind === "remote" ? "🏠 Remote" : p.kind === "km" ? `📍 ${p.km.toFixed(1)} km · ${p.area}` : /bengaluru|bangalore/i.test(r.location || "") ? "📍 Area not stated" : "";
+}
+const byNearest = (a, b) => place(a).rank - place(b).rank || (b.found_at || b.seen_at || "").localeCompare(a.found_at || a.seen_at || "");
 
 // ---- insights -----------------------------------------------------------------------------
 let archive = null, fullArchive = null, profileText = "";
@@ -335,11 +365,12 @@ function renderJobs() {
     order.filter(k => counts[k]).map(k => `<button class="chip-f ${JF.outcome === k ? "on" : ""}" data-o="${esc(k)}">${esc(WHY[k] || k)}<b>${counts[k]}</b></button>`).join("");
   document.querySelectorAll(".chip-f").forEach(b => b.onclick = () => { JF.outcome = b.dataset.o; JF.limit = 100; renderJobs(); });
   const rows = base.filter(r => !JF.outcome || r.outcome === JF.outcome);
+  if ($("jsort").value === "near") rows.sort(byNearest);
   $("jnote").textContent = `${rows.length} jobs`;
   $("jtable").innerHTML = `<div class="jr head"><span>Role</span><span class="hide-sm">Location</span><span class="hide-sm">Source</span><span class="hide-sm">Found</span><span>Status</span></div>` +
     (rows.slice(0, JF.limit).map(r => `<div class="jr" data-id="${esc(r.id)}">
       <div style="min-width:0"><div class="t">${esc(r.title)}</div><div class="c">${esc(r.company)}${r.exp_text ? " · " + esc(r.exp_text) : ""}</div></div>
-      <span class="m hide-sm">${esc((r.location || "–").split(",").slice(0, 2).join(","))}</span>
+      <span class="m hide-sm" title="${esc(r.location || "")}">${esc(placeLabel(r) || (r.location || "–").split(",").slice(0, 2).join(","))}</span>
       <span class="m hide-sm">${esc(r.source)}</span>
       <span class="m hide-sm">${ago(r.seen_at)}</span>
       <span><span class="why ${r.outcome === "alerted" ? "ok" : ""}" title="${esc(whyLong(r))}">${esc(whyShort(r))}</span></span>
@@ -349,7 +380,8 @@ function renderJobs() {
 }
 $("jmore").onclick = () => { JF.limit += 100; renderJobs(); };
 $("jq").oninput = () => { JF.limit = 100; renderJobs(); };
-$("jsource").onchange = $("jperiod").onchange = () => { JF.limit = 100; renderJobs(); };
+$("bsort").onchange = render;
+$("jsort").onchange = $("jsource").onchange = $("jperiod").onchange = () => { JF.limit = 100; renderJobs(); };
 
 function detailsHTML(r) {
   const sal = r.salary_max_lpa ? `₹${r.salary_min_lpa && r.salary_min_lpa !== r.salary_max_lpa ? r.salary_min_lpa + "–" : ""}${r.salary_max_lpa} LPA` : (r.salary_text || "Not stated");
@@ -360,6 +392,7 @@ function detailsHTML(r) {
       <div><span>Applicants</span>${r.applicants != null ? esc(r.applicants) : "Not shown"}</div>
       <div><span>Posted</span>${r.posted_at ? when(r.posted_at) : "Not shown"}</div>
       <div><span>Location</span>${esc(r.location || "–")}</div>
+      ${placeLabel(r) ? `<div><span>From ${esc(HOME.name)}</span>${esc(placeLabel(r).replace(/^\S+ /, ""))}${place(r).kind === "km" ? " (straight line)" : ""}</div>` : ""}
       <div><span>Employer</span>${r.consultant ? "Recruitment agency" : "Direct"}${r.has_email ? " · email in post" : ""}</div>
     </div></div>
     ${tags.length ? `<div><div class="label">Skills mentioned</div><div class="tags">${tags.map(t => `<span class="tag">${esc(t)}</span>`).join("")}</div></div>` : ""}
@@ -468,7 +501,8 @@ function render() {
     <span><b>${n("applied") + n("interview") + n("offer") + n("rejected")}</b>applied</span><span><b>${n("interview")}</b>interviews</span><span><b>${n("offer")}</b>offers</span>`;
   const cols = COLS.filter(c => (c.id !== "skipped" || F.skip) && (c.id !== "error" || n("error")));
   $("board").innerHTML = cols.map(c => {
-    const items = apps.filter(a => a.status === c.id && visible(a)).sort((a, b) => (b.found_at || "").localeCompare(a.found_at || ""));
+    const items = apps.filter(a => a.status === c.id && visible(a))
+      .sort($("bsort").value === "near" ? byNearest : (a, b) => (b.found_at || "").localeCompare(a.found_at || ""));
     return `<section class="col" data-status="${c.id}">
       <div class="col-head"><span class="pill" style="background:${c.color}">${c.name}</span><span class="count">${items.length}</span></div>
       <div class="cards">${items.length ? items.map(card).join("") : `<div class="empty-col">Drop cards here</div>`}</div>
@@ -499,7 +533,7 @@ function card(a) {
     <div class="tags">
       ${fit != null ? `<span class="tag ${cls}">Fit ${fit}</span>` : ""}
       ${a.email ? `<span class="tag mail">Emailed</span>` : ""}
-      ${a.where ? `<span class="tag where">${{ remote: "Remote", near: "Near HSR", "area not stated": "Bengaluru" }[a.where] || esc(a.where)}</span>` : ""}
+      ${placeLabel(a) ? `<span class="tag where">${esc(placeLabel(a))}</span>` : ""}
       ${a.track === "quick" ? `<span class="tag pt">${a.part_time ? "Part-time" : "Full-time"}</span>` : ""}
       ${a.track === "quick" && a.salary_max_lpa ? `<span class="tag">₹${Math.round(a.salary_max_lpa * 1e5 / 12 / 1000)}k/mo</span>` : ""}
       <span class="tag">${esc(a.source)}</span>
@@ -575,6 +609,8 @@ async function openPdf(a) {
 }
 
 function toggle(id, key) { $(id).onclick = () => { F[key] = !F[key]; $(id).classList.toggle("on", F[key]); render(); }; }
+for (const id of ["bsort", "jsort"]) { try { const v = localStorage.getItem(id); if (v) $(id).value = v; } catch (e) {}
+  $(id).addEventListener("change", () => { try { localStorage.setItem(id, $(id).value); } catch (e) {} }); }
 toggle("f-mail", "mail"); toggle("f-fit", "fit"); toggle("f-skip", "skip");
 $("q").oninput = render;
 $("reload").onclick = () => (archive = null, load()).catch(e => $("updated").textContent = "Couldn't load: " + e.message);
