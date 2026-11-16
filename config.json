@@ -451,99 +451,6 @@
     "max_experience_min_years": 0,
     "min_monthly_salary_full_time": 22000,
     "max_monthly_part_time_believable": 60000,
-    "near_hsr": [
-      "hsr",
-      "hsr layout",
-      "koramangala",
-      "btm",
-      "btm layout",
-      "bellandur",
-      "agara",
-      "madiwala",
-      "bommanahalli",
-      "silk board",
-      "jakkasandra",
-      "teachers colony",
-      "ejipura",
-      "haralur",
-      "kasavanahalli",
-      "kudlu",
-      "kudlu gate",
-      "hosapalya",
-      "parappana agrahara",
-      "singasandra",
-      "garvebhavi palya",
-      "iblur",
-      "ibbalur",
-      "hulimavu",
-      "bilekahalli",
-      "arekere",
-      "begur",
-      "mangammanapalya",
-      "bandepalya",
-      "somasundarapalya",
-      "kaikondrahalli",
-      "sarjapur road",
-      "jayanagar",
-      "jp nagar",
-      "j p nagar",
-      "adugodi",
-      "wilson garden",
-      "bommanahalli",
-      "hongasandra",
-      "roopena agrahara",
-      "rupena agrahara",
-      "hosur road",
-      "outer ring road",
-      "orr"
-    ],
-    "far_from_hsr": [
-      "whitefield",
-      "electronic city",
-      "electronics city",
-      "marathahalli",
-      "brookefield",
-      "kundalahalli",
-      "mahadevapura",
-      "kr puram",
-      "k r puram",
-      "hebbal",
-      "manyata",
-      "yelahanka",
-      "hennur",
-      "indiranagar",
-      "domlur",
-      "mg road",
-      "m g road",
-      "malleshwaram",
-      "rajajinagar",
-      "yeshwanthpur",
-      "peenya",
-      "vijayanagar",
-      "kengeri",
-      "mysore road",
-      "banashankari",
-      "basavanagudi",
-      "rt nagar",
-      "jalahalli",
-      "nagawara",
-      "thanisandra",
-      "bannerghatta road",
-      "devanahalli",
-      "hoskote",
-      "attibele",
-      "chandapura",
-      "bidadi",
-      "jigani",
-      "sarjapur",
-      "varthur",
-      "kadugodi",
-      "cv raman nagar",
-      "ulsoor",
-      "shivajinagar",
-      "cunningham road",
-      "majestic"
-    ],
     "exclude_titles": [
       "senior",
       "sr",
@@ -697,6 +604,392 @@
       "(?:[1-9]|one|two|three)\\+? years? of (?:relevant |prior )?experience (?:is )?(?:required|mandatory|must)"
     ],
     "_fresher_note": "Freshers only: jobs stating any minimum experience above 0, a LinkedIn level other than Entry level/Internship, or phrases like 'no freshers' are dropped. Titles with seniority or specialist markers are dropped.",
-    "telegram": false
+    "telegram": false,
+    "home": {
+      "name": "HSR Layout Sector 7",
+      "lat": 12.9106,
+      "lon": 77.6395
+    },
+    "max_km": 6,
+    "areas": {
+      "hsr layout": [
+        12.9116,
+        77.6389
+      ],
+      "hsr": [
+        12.9116,
+        77.6389
+      ],
+      "koramangala": [
+        12.9352,
+        77.6245
+      ],
+      "btm layout": [
+        12.9166,
+        77.6101
+      ],
+      "btm": [
+        12.9166,
+        77.6101
+      ],
+      "bellandur": [
+        12.9304,
+        77.6784
+      ],
+      "agara": [
+        12.9259,
+        77.6492
+      ],
+      "madiwala": [
+        12.9226,
+        77.6174
+      ],
+      "bommanahalli": [
+        12.9031,
+        77.6253
+      ],
+      "silk board": [
+        12.9177,
+        77.6238
+      ],
+      "jakkasandra": [
+        12.926,
+        77.634
+      ],
+      "ejipura": [
+        12.9425,
+        77.627
+      ],
+      "haralur": [
+        12.9037,
+        77.662
+      ],
+      "kasavanahalli": [
+        12.907,
+        77.676
+      ],
+      "kudlu gate": [
+        12.893,
+        77.637
+      ],
+      "kudlu": [
+        12.887,
+        77.651
+      ],
+      "hosapalya": [
+        12.898,
+        77.64
+      ],
+      "parappana agrahara": [
+        12.877,
+        77.662
+      ],
+      "singasandra": [
+        12.884,
+        77.641
+      ],
+      "garvebhavi palya": [
+        12.899,
+        77.627
+      ],
+      "iblur": [
+        12.922,
+        77.666
+      ],
+      "ibbalur": [
+        12.922,
+        77.666
+      ],
+      "hulimavu": [
+        12.877,
+        77.604
+      ],
+      "bilekahalli": [
+        12.896,
+        77.608
+      ],
+      "arekere": [
+        12.885,
+        77.596
+      ],
+      "begur": [
+        12.876,
+        77.629
+      ],
+      "mangammanapalya": [
+        12.91,
+        77.645
+      ],
+      "somasundarapalya": [
+        12.909,
+        77.651
+      ],
+      "kaikondrahalli": [
+        12.913,
+        77.677
+      ],
+      "sarjapur road": [
+        12.91,
+        77.685
+      ],
+      "jayanagar": [
+        12.93,
+        77.583
+      ],
+      "jp nagar": [
+        12.91,
+        77.585
+      ],
+      "j p nagar": [
+        12.91,
+        77.585
+      ],
+      "adugodi": [
+        12.943,
+        77.611
+      ],
+      "wilson garden": [
+        12.947,
+        77.598
+      ],
+      "hongasandra": [
+        12.899,
+        77.623
+      ],
+      "roopena agrahara": [
+        12.91,
+        77.628
+      ],
+      "electronic city": [
+        12.8452,
+        77.6602
+      ],
+      "electronics city": [
+        12.8452,
+        77.6602
+      ],
+      "whitefield": [
+        12.9698,
+        77.75
+      ],
+      "marathahalli": [
+        12.9569,
+        77.7011
+      ],
+      "brookefield": [
+        12.966,
+        77.718
+      ],
+      "kundalahalli": [
+        12.967,
+        77.714
+      ],
+      "mahadevapura": [
+        12.991,
+        77.688
+      ],
+      "kr puram": [
+        13.007,
+        77.696
+      ],
+      "k r puram": [
+        13.007,
+        77.696
+      ],
+      "hebbal": [
+        13.0358,
+        77.597
+      ],
+      "manyata": [
+        13.045,
+        77.62
+      ],
+      "yelahanka": [
+        13.1007,
+        77.5963
+      ],
+      "hennur": [
+        13.035,
+        77.64
+      ],
+      "indiranagar": [
+        12.9784,
+        77.6408
+      ],
+      "domlur": [
+        12.961,
+        77.6387
+      ],
+      "mg road": [
+        12.9756,
+        77.6066
+      ],
+      "m g road": [
+        12.9756,
+        77.6066
+      ],
+      "malleshwaram": [
+        13.0035,
+        77.5647
+      ],
+      "rajajinagar": [
+        12.991,
+        77.555
+      ],
+      "yeshwanthpur": [
+        13.028,
+        77.54
+      ],
+      "peenya": [
+        13.028,
+        77.519
+      ],
+      "vijayanagar": [
+        12.971,
+        77.536
+      ],
+      "kengeri": [
+        12.908,
+        77.485
+      ],
+      "banashankari": [
+        12.925,
+        77.546
+      ],
+      "basavanagudi": [
+        12.942,
+        77.575
+      ],
+      "rt nagar": [
+        13.021,
+        77.596
+      ],
+      "bannerghatta road": [
+        12.89,
+        77.597
+      ],
+      "sarjapur": [
+        12.86,
+        77.786
+      ],
+      "varthur": [
+        12.94,
+        77.747
+      ],
+      "ulsoor": [
+        12.981,
+        77.62
+      ],
+      "shivajinagar": [
+        12.985,
+        77.605
+      ],
+      "majestic": [
+        12.977,
+        77.572
+      ],
+      "cv raman nagar": [
+        12.985,
+        77.663
+      ],
+      "thanisandra": [
+        13.056,
+        77.634
+      ],
+      "jigani": [
+        12.785,
+        77.64
+      ],
+      "attibele": [
+        12.778,
+        77.772
+      ],
+      "chandapura": [
+        12.8,
+        77.7
+      ],
+      "devanahalli": [
+        13.247,
+        77.712
+      ],
+      "hoskote": [
+        13.07,
+        77.798
+      ],
+      "nagawara": [
+        13.04,
+        77.62
+      ],
+      "jalahalli": [
+        13.045,
+        77.548
+      ],
+      "kadugodi": [
+        12.997,
+        77.759
+      ],
+      "cunningham road": [
+        12.989,
+        77.594
+      ],
+      "mysore road": [
+        12.955,
+        77.53
+      ],
+      "bidadi": [
+        12.797,
+        77.385
+      ],
+      "richmond road": [
+        12.965,
+        77.6
+      ],
+      "lalbagh": [
+        12.9507,
+        77.5848
+      ],
+      "hsr sector": [
+        12.9116,
+        77.6389
+      ]
+    },
+    "_areas_note": "Approximate centre of each area (lat, lon). Distances are straight-line from home. Add areas here as they show up.",
+    "my_languages": [
+      "hindi",
+      "english",
+      "telugu",
+      "kannada"
+    ],
+    "other_languages": [
+      "tamil",
+      "malayalam",
+      "marathi",
+      "bengali",
+      "bangla",
+      "gujarati",
+      "punjabi",
+      "odia",
+      "oriya",
+      "assamese",
+      "urdu",
+      "konkani",
+      "german",
+      "french",
+      "spanish",
+      "japanese",
+      "mandarin",
+      "chinese",
+      "korean",
+      "arabic",
+      "italian",
+      "portuguese",
+      "russian",
+      "dutch",
+      "thai",
+      "vietnamese",
+      "indonesian",
+      "bahasa"
+    ],
+    "sales_title_regex": "sales|business development|\\bbd[ae]\\b|tele ?call\\w*|lead generation"
   }
 }

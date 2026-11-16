@@ -11,11 +11,20 @@ from core import (CFG, HERE, L, LOC_BLOCKED, LOC_REMOTE, Seen, _inbox_add, _rx, 
                   log, norm_key, now, record_found, tg_send)
 
 Q = CFG["quick"]
-EXCLUDE, NEAR, FAR, AGENCY_CO = _rx(Q["exclude_titles"]), _rx(Q["near_hsr"]), _rx(Q["far_from_hsr"]), _rx(Q["agency_company"])
+EXCLUDE, AGENCY_CO = _rx(Q["exclude_titles"]), _rx(Q["agency_company"])
+HOME = (Q["home"]["lat"], Q["home"]["lon"])
+AREAS = sorted(Q["areas"].items(), key=lambda kv: -len(kv[0]))  # longest names first ("hsr layout" before "hsr")
+AREA_RX = [(name, ll, re.compile(rf"(?<![a-z]){re.escape(name)}(?![a-z])", re.I)) for name, ll in AREAS]
 INCLUDE = re.compile(Q["include_titles_regex"], re.I)
 AGENCY_TXT = re.compile("|".join(Q["agency_text"]), re.I)
 SCAM_TXT = re.compile("|".join(Q["scam_text"]), re.I)
 NOT_FRESHER = re.compile("|".join(Q["not_fresher_text"]), re.I)
+SALES = re.compile(Q["sales_title_regex"], re.I)
+OTHER_LANG = rf"(?:{'|'.join(Q['other_languages'])})"
+LANG_IN_TITLE = re.compile(rf"(?<![a-z]){OTHER_LANG}(?![a-z])", re.I)
+# an other language mentioned close to a requirement word, in either order
+LANG_NEEDED = re.compile(rf"(?<![a-z]){OTHER_LANG}(?![a-z])[^.\n]{{0,60}}(?:language|speak|speaking|fluen|proficien|must|required|mandatory|native|communicat|knowledge)"
+                         rf"|(?:language|speak|speaking|fluen|proficien|must|required|mandatory|native|communicat|knowledge)[^.\n]{{0,60}}(?<![a-z]){OTHER_LANG}(?![a-z])", re.I)
 LI_SENIOR_LEVELS = {"Associate", "Mid-Senior level", "Director", "Executive"}  # LinkedIn's seniority field
 BLR = re.compile(r"bengaluru|bangalore", re.I)
 PART_TIME = re.compile(r"part[- ]?time|freelanc|hourly|per hour|weekends? only|few hours", re.I)
@@ -32,6 +41,25 @@ def location_ok(loc):
     return not loc or bool(BLR.search(loc)) or (bool(LOC_REMOTE.search(loc)) and not LOC_BLOCKED.search(loc))
 
 
+def km(a, b):
+    import math
+    (la1, lo1), (la2, lo2) = a, b
+    p = math.pi / 180
+    h = math.sin((la2 - la1) * p / 2) ** 2 + math.cos(la1 * p) * math.cos(la2 * p) * math.sin((lo2 - lo1) * p / 2) ** 2
+    return 2 * 6371 * math.asin(math.sqrt(h))
+
+
+def nearest_area(text):
+    """(area, km from home) for the closest known Bengaluru area named in text, or (None, None)."""
+    best = (None, None)
+    for name, ll, rx in AREA_RX:
+        if rx.search(text):
+            d = km(HOME, ll)
+            if best[1] is None or d < best[1]:
+                best = (name, d)
+    return best
+
+
 def where(job):
     """('remote' | 'near' | 'area not stated', None) if acceptable, else (None, reason)."""
     loc, text = job["location"] or "", job["description"] or ""
@@ -42,16 +70,14 @@ def where(job):
     if says_remote or (job.get("from_remote_search") and loc.strip().lower() in ("india", "")):
         if not LOC_BLOCKED.search(loc):
             return "remote", None
-    if NEAR.search(loc):
-        return "near", None
-    if FAR.search(loc):
-        return None, "farther than 6 km from HSR"
-    if loc and not BLR.search(loc):
+    area, d = nearest_area(loc)
+    if area is None and loc and not BLR.search(loc):
         return None, "location"
-    if NEAR.search(text[:3000]):
-        return "near", None
-    if FAR.search(text[:3000]):
-        return None, "farther than 6 km from HSR"
+    if area is None:
+        area, d = nearest_area(text[:3000])
+    if area is not None:
+        job["area"], job["distance_km"] = area.title(), round(d, 1)
+        return ("near", None) if d <= Q["max_km"] else (None, "farther than 6 km from HSR")
     return "area not stated", None
 
 
@@ -68,6 +94,8 @@ def reject_reason(job):
         return "agency or job drive"
     if SCAM_TXT.search(text):
         return "possible scam"
+    if SALES.search(job["title"]) and (LANG_IN_TITLE.search(job["title"]) or LANG_NEEDED.search(job["description"] or "")):
+        return "needs another language"
     part_time = bool(PART_TIME.search(text))
     job["part_time"] = part_time
     pay = monthly(job)
@@ -118,7 +146,8 @@ def process(jobs, seen, label):
     for j in fresh:
         seen.add(j)
     record_found(found, track="quick")
-    _inbox_add("quick.json", [dict(_slim(j), track="quick", part_time=j.get("part_time"), where=j.get("where")) for j in fresh])
+    _inbox_add("quick.json", [dict(_slim(j), track="quick", part_time=j.get("part_time"), where=j.get("where"),
+                                   area=j.get("area"), distance_km=j.get("distance_km")) for j in fresh])
 
     # Hourly digest: queue now, send when an hour has passed since the last one.
     if not Q.get("telegram", True):  # turned off by Muni (17 Nov): quick jobs are tracked on the dashboard only
