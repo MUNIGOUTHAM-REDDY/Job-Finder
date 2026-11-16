@@ -444,7 +444,7 @@
         "Remote"
       ]
     ],
-    "naukri_max_details": 20,
+    "naukri_max_details": 40,
     "linkedin_max_results": 40,
     "linkedin_max_details": 60,
     "max_age_hours": 48,
@@ -1130,6 +1130,15 @@
       "indonesian",
       "bahasa"
     ],
-    "sales_title_regex": "sales|business development|\\bbd[ae]\\b|tele ?call\\w*|lead generation"
+    "sales_title_regex": "sales|business development|\\bbd[ae]\\b|tele ?call\\w*|lead generation",
+    "agency_vague_text": [
+      "all (?:types of )?(?:professionals|graduates|streams|domains|profiles|candidates)",
+      "multiple domains",
+      "any graduate,? any (?:stream|domain)",
+      "jobs? for (?:all|everyone)",
+      "various (?:profiles|positions|domains)",
+      "(?:it|non[- ]?it) (?:and|&) (?:non[- ]?it|it) (?:jobs|openings)"
+    ],
+    "_agency_note": "Agency/consultancy/walk-in posts are kept (tagged Agency) only when they list concrete openings: a pay figure plus a named area or 'Location:' line, plus a named process/company. Vague 'jobs for all professionals' posts are dropped."
   }
 }

@@ -393,7 +393,7 @@ function detailsHTML(r) {
       <div><span>Posted</span>${r.posted_at ? when(r.posted_at) : "Not shown"}</div>
       <div><span>Location</span>${esc(r.location || "–")}</div>
       ${placeLabel(r) ? `<div><span>From ${esc(HOME.name)}</span>${esc(placeLabel(r).replace(/^\S+ /, ""))}${place(r).kind === "km" ? " (straight line)" : ""}</div>` : ""}
-      <div><span>Employer</span>${r.consultant ? "Recruitment agency" : "Direct"}${r.has_email ? " · email in post" : ""}</div>
+      <div><span>Employer</span>${r.consultant || r.agency ? "Recruitment agency" : "Direct"}${r.has_email ? " · email in post" : ""}</div>
     </div></div>
     ${tags.length ? `<div><div class="label">Skills mentioned</div><div class="tags">${tags.map(t => `<span class="tag">${esc(t)}</span>`).join("")}</div></div>` : ""}
     <div><div class="label">Description</div>${r.description ? `<div class="box desc">${esc(r.description)}</div>` : `<div style="color:var(--muted)">The site didn't provide a description for this job.</div>`}</div>`;
@@ -535,6 +535,7 @@ function card(a) {
       ${a.email ? `<span class="tag mail">Emailed</span>` : ""}
       ${placeLabel(a) ? `<span class="tag where">${esc(placeLabel(a))}</span>` : ""}
       ${a.track === "quick" ? `<span class="tag pt">${a.part_time ? "Part-time" : "Full-time"}</span>` : ""}
+      ${a.agency ? `<span class="tag" title="Posted by a placement agency; the post lists specific openings">Agency</span>` : ""}
       ${a.track === "quick" && a.salary_max_lpa ? `<span class="tag">₹${Math.round(a.salary_max_lpa * 1e5 / 12 / 1000)}k/mo</span>` : ""}
       <span class="tag">${esc(a.source)}</span>
     </div>

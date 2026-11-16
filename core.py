@@ -295,7 +295,7 @@ def _slim(j):
                            "salary_text", "salary_min_lpa", "salary_max_lpa", "applicants", "consultant", "contacts")}
     d["posted_at"] = j["posted_at"].isoformat() if j["posted_at"] else None
     d["description"] = (j["description"] or "")[:6000]
-    for k in ("where", "area", "distance_km", "part_time"):  # set by the quick-jobs search
+    for k in ("where", "area", "distance_km", "part_time", "agency"):  # set by the quick-jobs search
         if j.get(k) is not None:
             d[k] = j[k]
     return d

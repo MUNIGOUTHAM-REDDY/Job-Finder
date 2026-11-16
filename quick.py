@@ -19,6 +19,25 @@ INCLUDE = re.compile(Q["include_titles_regex"], re.I)
 AGENCY_TXT = re.compile("|".join(Q["agency_text"]), re.I)
 SCAM_TXT = re.compile("|".join(Q["scam_text"]), re.I)
 NOT_FRESHER = re.compile("|".join(Q["not_fresher_text"]), re.I)
+AGENCY_VAGUE = re.compile("|".join(Q["agency_vague_text"]), re.I)
+PAY_FIGURE = re.compile(r"(?:₹|rs\.?|inr)\s?\d[\d,]{2,}|\b\d{2}(?:\.\d)?\s?k\b|\b\d{2},\d{3}\b|\d+(?:\.\d+)?\s?(?:lpa|lacs?|lakhs?)\b", re.I)
+LOCATION_LINE = re.compile(r"location\s*[:\-]", re.I)
+OPENING_DETAIL = re.compile(r"\bprocess\b|\bvoice\b|\bchat\b|non[- ]?voice|\bshifts?\b|\bpackage\b|\bctc\b", re.I)
+
+
+def agency_worth_it(job):
+    """Agency posts are worth keeping when they list concrete openings, not 'jobs for all professionals'."""
+    text = job["description"] or ""
+    if len(text) < 250:
+        return False  # not enough detail to judge
+    pay = len(PAY_FIGURE.findall(text))
+    places = len(LOCATION_LINE.findall(text)) + sum(1 for _, _, rx in AREA_RX if rx.search(text))
+    detail = len(OPENING_DETAIL.findall(text))
+    if AGENCY_VAGUE.search(text) and not (pay >= 2 and places >= 2):
+        return False
+    return pay >= 1 and places >= 1 and detail >= 2
+
+
 SALES = re.compile(Q["sales_title_regex"], re.I)
 OTHER_LANG = rf"(?:{'|'.join(Q['other_languages'])})"
 LANG_IN_TITLE = re.compile(rf"(?<![a-z]){OTHER_LANG}(?![a-z])", re.I)
@@ -91,7 +110,9 @@ def reject_reason(job):
     if not title_ok(job["title"]):
         return "title"
     if job.get("consultant") or AGENCY_CO.search(job["company"] or "") or AGENCY_TXT.search(text[:2500]):
-        return "agency or job drive"
+        if not agency_worth_it(job):
+            return "agency or job drive"
+        job["agency"] = True
     if SCAM_TXT.search(text):
         return "possible scam"
     if SALES.search(job["title"]) and (LANG_IN_TITLE.search(job["title"]) or LANG_NEEDED.search(job["description"] or "")):
