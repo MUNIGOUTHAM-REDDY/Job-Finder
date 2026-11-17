@@ -212,7 +212,7 @@ The repo gets a small "Update seen jobs" commit after most runs. That's the bot 
 After each check, the application worker (code and log in the private `job-applications` repo) runs in the same GitHub job and:
 
 1. Tailors the resume to the job with the Claude API, using only facts from `profile.json` there, and makes a one-page PDF.
-2. Emails that PDF to the address in the job post (fit 50+, at most 20 a day, from Gmail).
+2. Emails that PDF (fit 50+, at most 20 a day, from Gmail), but only after a Claude Sonnet check: it confirms the hiring company's real domain, rejects look-alike, support, info and placeholder addresses, looks on the company's careers and contact pages for a better hiring contact, and must cite where it saw the address. The script then confirms the address appears in the post or a page that was read. If nothing passes, no email is sent and the card says why.
 3. Sends the PDF to Telegram with **Approve** and **Skip** buttons. Taps are picked up by the next check.
 4. Logs every step, one file per job, in that private repo.
 5. Saves every design job the checks see (including ones filtered out) with its description and the skills it mentions, in `jobs/<month>/` there. The dashboard's **Insights** tab turns this into the most-asked skills and tools, and which of them your resume is missing.
