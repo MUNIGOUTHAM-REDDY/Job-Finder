@@ -408,6 +408,34 @@
       [
         "data annotation",
         ""
+      ],
+      [
+        "customer care executive",
+        "bangalore"
+      ],
+      [
+        "voice process",
+        "bangalore"
+      ],
+      [
+        "process associate",
+        "bangalore"
+      ],
+      [
+        "international voice process",
+        "bangalore"
+      ],
+      [
+        "chat process",
+        "bangalore"
+      ],
+      [
+        "fresher",
+        "bellandur"
+      ],
+      [
+        "fresher",
+        "btm layout"
       ]
     ],
     "linkedin_queries": [
@@ -442,12 +470,44 @@
       [
         "part time",
         "Remote"
+      ],
+      [
+        "customer care",
+        "Bengaluru"
+      ],
+      [
+        "process associate",
+        "Bengaluru"
+      ],
+      [
+        "voice process",
+        "Bengaluru"
+      ],
+      [
+        "call center",
+        "Bengaluru"
+      ],
+      [
+        "customer success associate",
+        "Bengaluru"
+      ],
+      [
+        "fresher",
+        "Bengaluru"
+      ],
+      [
+        "customer service",
+        "Remote"
+      ],
+      [
+        "data annotation",
+        "Remote"
       ]
     ],
     "naukri_max_details": 40,
-    "linkedin_max_results": 40,
-    "linkedin_max_details": 60,
-    "max_age_hours": 48,
+    "linkedin_max_results": 100,
+    "linkedin_max_details": 80,
+    "max_age_hours": 24,
     "max_experience_min_years": 0,
     "min_monthly_salary_full_time": 22000,
     "max_monthly_part_time_believable": 60000,
@@ -512,14 +572,12 @@
       "team leader",
       "tl",
       "supervisor",
-      "specialist",
       "analyst",
       "engineer",
       "consultant",
       "expert",
       "experienced",
       "professional",
-      "officer",
       "phlebotomist",
       "radiographer",
       "technologist",
