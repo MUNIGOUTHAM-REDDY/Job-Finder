@@ -203,7 +203,7 @@ class Seen:
 
 EMAIL = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}")
 PHONE = re.compile(r"(?<![\d/=_-])(?:\+91[\s-]?|0)?(?:[6-9]\d{4}[\s-]?\d{5}|\d{2,4}[\s-]\d{6,8})(?![\d/_-])")
-JUNK_EMAIL = re.compile(r"\.(png|jpe?g|gif|svg|webp)$|example\.|sentry|wixpress|noreply|no-reply|domain\.com", re.I)
+JUNK_EMAIL = re.compile(r"\.(png|jpe?g|gif|svg|webp)$|example\.|sentry|wixpress|noreply|no-reply|domain\.com|@email\.com$|@yourdomain|@company\.com$", re.I)
 SKIP_DOMAINS = ("naukri", "linkedin", "ambitionbox", "glassdoor", "indeed", "wikipedia", "facebook",
                 "instagram", "twitter", "x.com", "youtube", "crunchbase", "zaubacorp", "tofler",
                 "justdial", "duckduckgo", "foundit", "instahyre", "wellfound", "quora", "economictimes")
