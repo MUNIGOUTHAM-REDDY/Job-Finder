@@ -176,7 +176,6 @@ a { color: #5b4bd5; }
       <input id="q" placeholder="Search company or role">
     </label>
     <button class="btn" id="f-mail">✉️ Emailed</button>
-    <button class="btn" id="f-fit">Fit 70+</button>
     <button class="btn" id="f-skip">Show skipped</button>
     <select class="btn" id="bsort" aria-label="Sort cards"><option value="recent">Recent first</option><option value="near">Nearest first</option></select>
     <button class="btn" id="reload">↻ Refresh</button>
@@ -242,7 +241,12 @@ const NAME = Object.fromEntries(COLS.map(c => [c.id, c.name]));
 let token = null, allApps = [], apps = [], openKey = null, TRACK = "design";
 try { TRACK = localStorage.getItem("track") || "design"; } catch (e) {}
 const trackOf = x => x.track || "design";
-const F = { mail: false, fit: false, skip: false };
+const F = { mail: false, skip: false };
+// The Board only shows fresh, strong new matches. The rest stay in All jobs, until you move them to another status yourself.
+const MIN_BOARD_FIT = 70, MAX_BOARD_HOURS = 10;
+const lowFit = a => trackOf(a) === "design" && a.fit?.score < MIN_BOARD_FIT;
+const stale = a => Date.now() - new Date(a.found_at) > MAX_BOARD_HOURS * 36e5;
+const offBoard = a => a.status === "prepared" && (lowFit(a) || stale(a));
 try { token = localStorage.getItem("dash_key"); } catch (e) {}
 // A private link ending in #key=... saves the key, then removes it from the address bar.
 function takeLinkKey() {
@@ -289,7 +293,7 @@ async function load() {
   allApps = rows.map(toApp);
   apps = allApps.filter(a => trackOf(a) === TRACK);
   $("updated").textContent = "Updated " + new Date().toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" });
-  render();
+  render(); renderJobs();
   if (openKey) openDrawer(openKey);
 }
 
@@ -405,9 +409,10 @@ function renderJobs() {
   const rows = base.filter(r => !JF.outcome || r.outcome === JF.outcome);
   if ($("jsort").value === "near") rows.sort(byNearest);
   $("jnote").textContent = `${rows.length} jobs`;
+  const fits = new Map(apps.map(a => [a.key, a.fit?.score]));
   $("jtable").innerHTML = `<div class="jr head"><span>Role</span><span class="hide-sm">Location</span><span class="hide-sm">Source</span><span class="hide-sm">Found</span><span>Status</span></div>` +
     (rows.slice(0, JF.limit).map(r => `<div class="jr" data-id="${esc(r.id)}">
-      <div style="min-width:0"><div class="t">${esc(r.title)}</div><div class="c">${esc(r.company)}${r.exp_text ? " · " + esc(r.exp_text) : ""}</div></div>
+      <div style="min-width:0"><div class="t">${esc(r.title)}</div><div class="c">${esc(r.company)}${r.exp_text ? " · " + esc(r.exp_text) : ""}${fits.get(r.key) != null ? " · Fit " + fits.get(r.key) : ""}</div></div>
       <span class="m hide-sm" title="${esc(r.location || "")}">${esc(placeLabel(r) || (r.location || "–").split(",").slice(0, 2).join(","))}</span>
       <span class="m hide-sm">${esc(r.source)}</span>
       <span class="m hide-sm">${ago(r.seen_at)}</span>
@@ -449,13 +454,13 @@ function openJob(id) {
     </div>
     <div class="d-body">
       <div class="d-row"><a class="btn" href="${esc(r.url)}" target="_blank" rel="noopener">Open job ↗</a>
-        ${app ? `<button class="btn" id="d-board">Open on Board</button>` : ""}</div>
+        ${app ? `<button class="btn" id="d-board">${offBoard(app) ? "Open application" : "Open on Board"}</button>` : ""}</div>
       <div class="box" style="background:${r.outcome === "alerted" ? "#f2fbf5" : "#fff6f6"}"><div class="label" style="margin-bottom:4px">${r.outcome === "alerted" ? "Why it was sent" : "Why it was filtered out"}</div>${esc(whyLong(r))}</div>
       ${detailsHTML(r)}
     </div>`;
   $("drawer").classList.add("on"); $("scrim").classList.add("on");
   $("close").onclick = closeDrawer;
-  if (app) $("d-board").onclick = () => { location.hash = "#board"; openDrawer(app.key); };
+  if (app) $("d-board").onclick = () => { if (!offBoard(app)) location.hash = "#board"; openDrawer(app.key); };
 }
 
 function renderInsights() {
@@ -581,7 +586,7 @@ window.addEventListener("hashchange", setView);
 function setTrack(t) {
   TRACK = t; try { localStorage.setItem("track", t); } catch (e) {}
   document.querySelectorAll(".seg button").forEach(b => b.classList.toggle("on", b.dataset.track === t));
-  $("f-mail").hidden = $("f-fit").hidden = t === "quick"; $("tab-map").hidden = t !== "quick"; if (t !== "quick" && location.hash === "#map") location.hash = "#board"; else setView();
+  $("f-mail").hidden = t === "quick"; $("tab-map").hidden = t !== "quick"; if (t !== "quick" && location.hash === "#map") location.hash = "#board"; else setView();
   COLS[0].name = NAME.prepared = t === "quick" ? "New" : "Waiting for you";
   apps = allApps.filter(a => trackOf(a) === TRACK);
   if (fullArchive) archive = fullArchive.filter(r => trackOf(r) === TRACK);
@@ -591,13 +596,14 @@ document.querySelectorAll(".seg button").forEach(b => b.onclick = () => setTrack
 
 function visible(a) {
   const q = $("q").value.toLowerCase();
-  return (!q || (a.company + " " + a.title).toLowerCase().includes(q)) && (!F.mail || a.email) && (!F.fit || (a.fit?.score || 0) >= 70);
+  return (!q || (a.company + " " + a.title).toLowerCase().includes(q)) && (!F.mail || a.email) && !offBoard(a);
 }
 
 function render() {
   const n = s => apps.filter(a => a.status === s).length;
   $("kpis").innerHTML = `<span><b>${apps.length}</b>found</span><span><b>${apps.filter(a => a.email).length}</b>emailed</span>
-    <span><b>${n("applied") + n("interview") + n("offer") + n("rejected")}</b>applied</span><span><b>${n("interview")}</b>interviews</span><span><b>${n("offer")}</b>offers</span>`;
+    <span><b>${n("applied") + n("interview") + n("offer") + n("rejected")}</b>applied</span><span><b>${n("interview")}</b>interviews</span><span><b>${n("offer")}</b>offers</span>` +
+    (apps.some(offBoard) ? `<span title="Still listed in All jobs"><b>${apps.filter(offBoard).length}</b>hidden: older than ${MAX_BOARD_HOURS}h${TRACK === "design" ? ` or under ${MIN_BOARD_FIT} fit` : ""}</span>` : "");
   const cols = COLS.filter(c => (c.id !== "skipped" || F.skip) && (c.id !== "error" || n("error")));
   $("board").innerHTML = cols.map(c => {
     const items = apps.filter(a => a.status === c.id && visible(a))
@@ -713,7 +719,7 @@ async function openPdf(a) {
 function toggle(id, key) { $(id).onclick = () => { F[key] = !F[key]; $(id).classList.toggle("on", F[key]); render(); }; }
 for (const id of ["bsort", "jsort"]) { try { const v = localStorage.getItem(id); if (v) $(id).value = v; } catch (e) {}
   $(id).addEventListener("change", () => { try { localStorage.setItem(id, $(id).value); } catch (e) {} }); }
-toggle("f-mail", "mail"); toggle("f-fit", "fit"); toggle("f-skip", "skip");
+toggle("f-mail", "mail"); toggle("f-skip", "skip");
 $("q").oninput = render;
 $("reload").onclick = () => (archive = null, load()).catch(e => $("updated").textContent = "Couldn't load: " + e.message);
 
