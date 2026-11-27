@@ -42,7 +42,7 @@ h1 { font-size: 17px; margin: 0; font-weight: 600; }
 
 /* board */
 .board { display: flex; gap: 12px; padding: 4px 20px 24px; overflow-x: auto; align-items: flex-start; min-height: calc(100vh - 150px); }
-.col { flex: 0 0 272px; background: #f0f1f4; border-radius: 10px; display: flex; flex-direction: column; max-height: calc(100vh - 170px); }
+.col { flex: 0 0 272px; background: #f0f1f4; border-radius: 10px; display: flex; flex-direction: column; max-height: calc(100vh - 220px); }
 .col.drop { outline: 2px dashed var(--accent); outline-offset: -2px; background: var(--accent-soft); }
 .col-head { display: flex; align-items: center; gap: 8px; padding: 10px 10px 8px; }
 .pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 6px; font-size: 11px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
@@ -59,6 +59,28 @@ h1 { font-size: 17px; margin: 0; font-weight: 600; }
 .tag.fit-hi { background: #e7f6ec; color: #18794e; } .tag.fit-mid { background: #fff4e0; color: #a35c00; } .tag.fit-lo { background: #fdecec; color: #b42318; }
 .tag.mail { background: #e8f1fe; color: #1d5bd8; }
 .card .foot { display: flex; justify-content: space-between; color: var(--faint); font-size: 11px; margin-top: 8px; }
+
+.filterbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 0 20px 12px; }
+.filterbar .label-s { color: var(--faint); font-size: 12px; }
+.filterbar .sep { width: 1px; height: 22px; background: var(--line); margin: 0 2px; }
+select.btn.on { background: var(--accent-soft); border-color: #d6d0fb; color: #5b4bd5; }
+input.btn { cursor: text; }
+.linkish { border: 0; background: none; padding: 0; color: var(--accent); cursor: pointer; font: inherit; }
+
+/* searches */
+.sgrid { padding: 4px 20px 32px; display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr)); align-items: start; }
+.sgrid h3 { margin: 0; font-size: 14px; }
+.sgrid .hint { color: var(--muted); margin: 4px 0 0; font-size: 12px; }
+.srow { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.sblock { margin-top: 14px; }
+.sblock > .label { margin-bottom: 6px; }
+.schips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.schip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 5px 3px 10px; border-radius: 999px; background: var(--accent-soft); color: #4b3dc0; font-size: 12px; }
+.schip button { border: 0; background: none; cursor: pointer; color: inherit; font-size: 14px; line-height: 1; padding: 0 3px; }
+.schip.off { background: var(--hover); color: var(--muted); text-decoration: line-through; padding-right: 10px; cursor: pointer; border: 0; font: inherit; font-size: 12px; }
+.checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; }
+.checks label, .switch { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+.warn { color: #a35c00; font-size: 12px; margin-top: 10px; }
 
 /* insights */
 .ins { padding: 4px 20px 32px; display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); align-items: start; }
@@ -157,7 +179,7 @@ a { color: #5b4bd5; }
       <button id="t-design" data-track="design">Design jobs</button><button id="t-quick" data-track="quick">Quick jobs</button>
     </div>
   </div>
-  <nav class="tabs"><a class="tab on" href="#board" data-view="board">Board</a><a class="tab" href="#jobs" data-view="jobs">All jobs</a><a class="tab" href="#insights" data-view="insights">Insights</a><a class="tab" id="tab-map" href="#map" data-view="map" hidden>Map</a></nav>
+  <nav class="tabs"><a class="tab on" href="#board" data-view="board">Board</a><a class="tab" href="#jobs" data-view="jobs">All jobs</a><a class="tab" href="#insights" data-view="insights">Insights</a><a class="tab" href="#searches" data-view="searches">Searches</a><a class="tab" id="tab-map" href="#map" data-view="map" hidden>Map</a></nav>
 </header>
 
 <section class="connect" id="connect" hidden>
@@ -177,10 +199,10 @@ a { color: #5b4bd5; }
     </label>
     <button class="btn" id="f-mail">✉️ Emailed</button>
     <button class="btn" id="f-skip">Show skipped</button>
-    <select class="btn" id="bsort" aria-label="Sort cards"><option value="recent">Recent first</option><option value="near">Nearest first</option></select>
     <button class="btn" id="reload">↻ Refresh</button>
     <div class="kpis" id="kpis"></div>
   </div>
+  <div class="filterbar" id="filterbar"></div>
   <main class="board" id="board"></main>
 </div>
 
@@ -191,8 +213,9 @@ a { color: #5b4bd5; }
       <input id="jq" placeholder="Search role, company or skill">
     </label>
     <select class="btn" id="jsource"><option value="">All sources</option></select>
-    <select class="btn" id="jsort" aria-label="Sort jobs"><option value="recent">Recent first</option><option value="near">Nearest first</option></select>
-    <select class="btn" id="jperiod"><option value="1">Last 24 hours</option><option value="7" selected>Last 7 days</option><option value="30">Last 30 days</option><option value="0">All time</option></select>
+    <select class="btn" id="jsort" aria-label="Sort jobs"><option value="recent">Recent first</option><option value="near">Nearest first</option><option value="fit">Best fit first</option><option value="pay">Highest pay first</option><option value="applicants">Fewest applicants first</option></select>
+    <select class="btn" id="jfit" aria-label="Minimum fit"><option value="">Any fit</option><option value="50">Fit 50+</option><option value="60">Fit 60+</option><option value="70">Fit 70+</option><option value="80">Fit 80+</option></select>
+    <select class="btn" id="jperiod" aria-label="Time period"><option value="1">Last hour</option><option value="3">Last 3 hours</option><option value="10">Last 10 hours</option><option value="24">Last 24 hours</option><option value="168" selected>Last 7 days</option><option value="720">Last 30 days</option><option value="0">All time</option></select>
     <span class="updated" id="jnote" style="margin-left:0"></span>
   </div>
   <div class="chips" id="jchips"></div>
@@ -207,6 +230,11 @@ a { color: #5b4bd5; }
     <span class="updated" id="ins-note" style="margin-left:0"></span>
   </div>
   <div class="ins" id="ins"></div>
+</div>
+
+<div id="view-searches" hidden>
+  <div class="toolbar"><span class="updated" id="snote" style="margin-left:0">Times are India time. The cloud search picks up changes within a couple of minutes.</span></div>
+  <div class="sgrid" id="searches"></div>
 </div>
 
 <div id="view-map" hidden>
@@ -242,11 +270,6 @@ let token = null, allApps = [], apps = [], openKey = null, TRACK = "design";
 try { TRACK = localStorage.getItem("track") || "design"; } catch (e) {}
 const trackOf = x => x.track || "design";
 const F = { mail: false, skip: false };
-// The Board only shows fresh, strong new matches. The rest stay in All jobs, until you move them to another status yourself.
-const MIN_BOARD_FIT = 70, MAX_BOARD_HOURS = 10;
-const lowFit = a => trackOf(a) === "design" && a.fit?.score < MIN_BOARD_FIT;
-const stale = a => Date.now() - new Date(a.found_at) > MAX_BOARD_HOURS * 36e5;
-const offBoard = a => a.status === "prepared" && (lowFit(a) || stale(a));
 try { token = localStorage.getItem("dash_key"); } catch (e) {}
 // A private link ending in #key=... saves the key, then removes it from the address bar.
 function takeLinkKey() {
@@ -287,9 +310,13 @@ function toApp({ key, data, board }) {
 
 async function load() {
   $("updated").textContent = "Loading…";
-  const rows = await sbAll("applications?select=key,data,board&order=key");
+  const [rows, settings] = await Promise.all([sbAll("applications?select=key,data,board&order=key"), sb("settings?select=name,data")]);
   // A wrong key doesn't raise an error, it just sees no rows.
   if (!rows.length) throw new Error("401 no data for this key");
+  await saving;
+  if (!SETTINGS.templates) delete VIEW.design, delete VIEW.quick;  // first load: open with your default template
+  SETTINGS = Object.fromEntries(settings.map(r => [r.name, r.data]));
+  renderSearches();
   allApps = rows.map(toApp);
   apps = allApps.filter(a => trackOf(a) === TRACK);
   $("updated").textContent = "Updated " + new Date().toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" });
@@ -389,10 +416,12 @@ function whyLong(r) {
   return o;
 }
 const JF = { outcome: "", limit: 100 };
+const fitMap = () => new Map(apps.map(a => [a.key, a.fit?.score]));
 function jobsFiltered() {
-  const days = +$("jperiod").value, cutoff = days ? Date.now() - days * 864e5 : 0;
-  const q = $("jq").value.toLowerCase(), src = $("jsource").value;
-  return (archive || []).filter(r => (!cutoff || new Date(r.seen_at || 0) >= cutoff) && (!src || r.source === src) &&
+  const hours = +$("jperiod").value, cutoff = hours ? Date.now() - hours * 36e5 : 0;
+  const q = $("jq").value.toLowerCase(), src = $("jsource").value, minFit = TRACK === "design" ? +$("jfit").value : 0;
+  const fits = fitMap();
+  return (archive || []).filter(r => (!cutoff || new Date(r.seen_at || 0) >= cutoff) && (!src || r.source === src) && (!minFit || fits.get(r.key) >= minFit) &&
     (!q || [r.title, r.company, r.location, ...Object.values(r.skills || {}).flat()].join(" ").toLowerCase().includes(q)));
 }
 function renderJobs() {
@@ -407,9 +436,9 @@ function renderJobs() {
     order.filter(k => counts[k]).map(k => `<button class="chip-f ${JF.outcome === k ? "on" : ""}" data-o="${esc(k)}">${esc(WHY[k] || k)}<b>${counts[k]}</b></button>`).join("");
   document.querySelectorAll(".chip-f").forEach(b => b.onclick = () => { JF.outcome = b.dataset.o; JF.limit = 100; renderJobs(); });
   const rows = base.filter(r => !JF.outcome || r.outcome === JF.outcome);
-  if ($("jsort").value === "near") rows.sort(byNearest);
   $("jnote").textContent = `${rows.length} jobs`;
-  const fits = new Map(apps.map(a => [a.key, a.fit?.score]));
+  const fits = fitMap(), order2 = sorter($("jsort").value, r => r.seen_at, r => fits.get(r.key));
+  rows.sort(order2);
   $("jtable").innerHTML = `<div class="jr head"><span>Role</span><span class="hide-sm">Location</span><span class="hide-sm">Source</span><span class="hide-sm">Found</span><span>Status</span></div>` +
     (rows.slice(0, JF.limit).map(r => `<div class="jr" data-id="${esc(r.id)}">
       <div style="min-width:0"><div class="t">${esc(r.title)}</div><div class="c">${esc(r.company)}${r.exp_text ? " · " + esc(r.exp_text) : ""}${fits.get(r.key) != null ? " · Fit " + fits.get(r.key) : ""}</div></div>
@@ -423,8 +452,7 @@ function renderJobs() {
 }
 $("jmore").onclick = () => { JF.limit += 100; renderJobs(); };
 $("jq").oninput = () => { JF.limit = 100; renderJobs(); };
-$("bsort").onchange = render;
-$("jsort").onchange = $("jsource").onchange = $("jperiod").onchange = () => { JF.limit = 100; renderJobs(); };
+$("jsort").onchange = $("jsource").onchange = $("jperiod").onchange = $("jfit").onchange = () => { JF.limit = 100; renderJobs(); };
 
 function detailsHTML(r) {
   const sal = r.salary_max_lpa ? `₹${r.salary_min_lpa && r.salary_min_lpa !== r.salary_max_lpa ? r.salary_min_lpa + "–" : ""}${r.salary_max_lpa} LPA` : (r.salary_text || "Not stated");
@@ -574,19 +602,22 @@ $("mloc").onclick = () => {
 };
 
 function setView() {
-  const v = { "#insights": "insights", "#jobs": "jobs", "#map": TRACK === "quick" ? "map" : "" }[location.hash] || "board";
+  const v = { "#insights": "insights", "#jobs": "jobs", "#searches": "searches", "#map": TRACK === "quick" ? "map" : "" }[location.hash] || "board";
   document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.view === v));
   if (!token) return;
-  $("app").hidden = v !== "board"; $("view-insights").hidden = v !== "insights"; $("view-jobs").hidden = v !== "jobs"; $("view-map").hidden = v !== "map";
+  $("app").hidden = v !== "board"; $("view-insights").hidden = v !== "insights"; $("view-jobs").hidden = v !== "jobs"; $("view-map").hidden = v !== "map"; $("view-searches").hidden = v !== "searches";
+  if (v === "searches") renderSearches();
   if (v === "map") initMap();
-  if (v !== "board" && v !== "map" && !archive) loadArchive().catch(e => $("ins-note").textContent = $("jnote").textContent = "Couldn't load: " + e.message);
+  if ((v === "jobs" || v === "insights") && !archive) loadArchive().catch(e => $("ins-note").textContent = $("jnote").textContent = "Couldn't load: " + e.message);
 }
 window.addEventListener("hashchange", setView);
 
 function setTrack(t) {
   TRACK = t; try { localStorage.setItem("track", t); } catch (e) {}
   document.querySelectorAll(".seg button").forEach(b => b.classList.toggle("on", b.dataset.track === t));
-  $("f-mail").hidden = t === "quick"; $("tab-map").hidden = t !== "quick"; if (t !== "quick" && location.hash === "#map") location.hash = "#board"; else setView();
+  $("f-mail").hidden = $("jfit").hidden = t === "quick"; naming = false;
+  $("jsort").querySelector('[value="fit"]').hidden = t === "quick"; if (t === "quick" && $("jsort").value === "fit") $("jsort").value = "recent";
+  $("tab-map").hidden = t !== "quick"; if (t !== "quick" && location.hash === "#map") location.hash = "#board"; else setView();
   COLS[0].name = NAME.prepared = t === "quick" ? "New" : "Waiting for you";
   apps = allApps.filter(a => trackOf(a) === TRACK);
   if (fullArchive) archive = fullArchive.filter(r => trackOf(r) === TRACK);
@@ -594,20 +625,193 @@ function setTrack(t) {
 }
 document.querySelectorAll(".seg button").forEach(b => b.onclick = () => setTrack(b.dataset.track));
 
+/* ---- board filters, sorting and saved templates ---------------------------------------- */
+let SETTINGS = {};
+const opts = (...list) => list.map(([v, t]) => [String(v), t]);
+const place_ = (a, v) => v === "remote" ? place(a).kind === "remote" : /^\d+$/.test(v) ? place(a).kind === "km" && place(a).km <= +v : new RegExp(v, "i").test(a.location || "");
+// newOnly filters apply to new cards only, so a job you've acted on never disappears because it aged.
+const FILTERS = [
+  { id: "age", newOnly: true, options: () => opts(["", "Any time"], [1, "Last hour"], [3, "Last 3 hours"], [6, "Last 6 hours"], [10, "Last 10 hours"], [24, "Last 24 hours"], [72, "Last 3 days"], [168, "Last 7 days"]),
+    test: (a, v) => Date.now() - new Date(a.found_at) <= v * 36e5 },
+  { id: "fit", track: "design", newOnly: true, options: () => opts(["", "Any fit"], [50, "Fit 50+"], [60, "Fit 60+"], [70, "Fit 70+"], [80, "Fit 80+"]), test: (a, v) => !(a.fit?.score < +v) },
+  { id: "source", options: () => opts(["", "All sources"], ...[...new Set(apps.map(a => a.source).filter(Boolean))].sort().map(x => [x, x])), test: (a, v) => a.source === v },
+  { id: "city", track: "design", options: () => opts(["", "Any location"], ["remote", "Remote"], ["bengaluru|bangalore", "Bangalore"], ["hyderabad", "Hyderabad"]), test: place_ },
+  { id: "near", track: "quick", options: () => opts(["", "Any distance"], ["remote", "Remote"], [2, "Within 2 km"], [4, "Within 4 km"], [6, "Within 6 km"]), test: place_ },
+  { id: "pay", track: "quick", options: () => opts(["", "Any pay"], [22, "States ₹22k+ a month"], [30, "States ₹30k+ a month"], [40, "States ₹40k+ a month"]), test: (a, v) => a.salary_max_lpa * 100 / 12 >= v },
+  { id: "lpa", track: "design", options: () => opts(["", "Any salary"], [6, "States 6 LPA+"], [10, "States 10 LPA+"], [15, "States 15 LPA+"]), test: (a, v) => a.salary_max_lpa >= +v },
+  { id: "type", track: "quick", options: () => opts(["", "Full or part-time"], ["full", "Full-time"], ["part", "Part-time"]), test: (a, v) => !!a.part_time === (v === "part") },
+  { id: "employer", track: "quick", options: () => opts(["", "Any employer"], ["direct", "Direct employers"], ["agency", "Agencies"]), test: (a, v) => !!(a.agency || a.consultant) === (v === "agency") },
+];
+const SORTS = { recent: "Recent first", fit: "Best fit first", near: "Nearest first", pay: "Highest pay first", applicants: "Fewest applicants first" };
+function sorter(kind, date, fit) {
+  const recent = (a, b) => (date(b) || "").localeCompare(date(a) || "");
+  const by = { fit: (a, b) => (fit(b) ?? -1) - (fit(a) ?? -1), near: (a, b) => place(a).rank - place(b).rank,
+    pay: (a, b) => (b.salary_max_lpa || 0) - (a.salary_max_lpa || 0), applicants: (a, b) => (a.applicants ?? 1e9) - (b.applicants ?? 1e9) }[kind];
+  return by ? (a, b) => by(a, b) || recent(a, b) : recent;
+}
+const BUILT_IN = {
+  design: [{ name: "Fresh and strong", f: { age: "10", fit: "70" } }, { name: "Today, best fit", f: { age: "24", fit: "50", sort: "fit" } }, { name: "Everything", f: {} }],
+  quick: [{ name: "Fresh", f: { age: "10" } }, { name: "Near me today", f: { age: "24", near: "6", sort: "near" } }, { name: "Best paying this week", f: { age: "168", pay: "22", sort: "pay" } }, { name: "Everything", f: {} }],
+};
+const VIEW = {};  // the filters in use now, per search
+const mine = () => SETTINGS.templates?.[TRACK] || {};
+const templates = () => [...BUILT_IN[TRACK], ...(mine().saved || [])];
+const defaultName = () => templates().some(t => t.name === mine().default) ? mine().default : BUILT_IN[TRACK][0].name;
+const view = () => VIEW[TRACK] ||= { ...templates().find(t => t.name === defaultName()).f };
+const same = (a, b) => [...FILTERS.map(x => x.id), "sort"].every(k => (a[k] || (k === "sort" ? "recent" : "")) === (b[k] || (k === "sort" ? "recent" : "")));
+const trackFilters = () => FILTERS.filter(x => !x.track || x.track === TRACK);
+const passes = a => trackFilters().every(x => !view()[x.id] || (x.newOnly && a.status !== "prepared") || x.test(a, view()[x.id]));
+const offBoard = a => !passes(a);
+
+async function saveSetting(name, data) {
+  const rows = await sb(`settings?name=eq.${name}&select=name`, { method: "PATCH", headers: { Prefer: "return=representation" },
+    body: JSON.stringify({ data, updated_at: new Date().toISOString() }) });
+  if (!rows.length) throw new Error("not saved");
+}
+async function saveTemplates(change, done) {
+  const all = structuredClone(SETTINGS.templates || {}), t = all[TRACK] ||= {};
+  change(t);
+  try { await saveSetting("templates", all); SETTINGS.templates = all; toast(done); renderBar(); }
+  catch (e) { toast("Couldn't save the template. Try again."); }
+}
+let naming = false;
+function renderBar() {
+  const f = view(), current = templates().find(t => same(t.f, f)), own = current && (mine().saved || []).some(t => t.name === current.name);
+  const select = (id, label, options, value, active) => `<select class="btn ${active ? "on" : ""}" data-f="${id}" aria-label="${label}">${options.map(([v, t]) => `<option value="${esc(v)}" ${v === (value || "") ? "selected" : ""}>${esc(t)}</option>`).join("")}</select>`;
+  $("filterbar").innerHTML = `<span class="label-s">Template</span>
+    <select class="btn" id="tpl" aria-label="Template">${current ? "" : `<option selected value="">Custom filters</option>`}${templates().map(t => `<option ${t === current ? "selected" : ""} value="${esc(t.name)}">${esc(t.name)}${t.name === defaultName() ? " (default)" : ""}</option>`).join("")}</select>
+    <span class="sep"></span>
+    ${trackFilters().map(x => select(x.id, x.id, x.options(), f[x.id], f[x.id])).join("")}
+    <span class="sep"></span>
+    ${select("sort", "Sort cards", Object.entries(SORTS).filter(([k]) => k !== "fit" || TRACK === "design"), f.sort || "recent")}
+    ${naming ? `<input class="btn" id="tpl-name" maxlength="40" placeholder="Template name"><button class="btn primary" id="tpl-ok">Save</button><button class="btn" id="tpl-cancel">Cancel</button>`
+      : !current ? `<button class="btn" id="tpl-new">Save as template</button>`
+      : `${current.name !== defaultName() ? `<button class="btn" id="tpl-default">Make default</button>` : ""}${own ? `<button class="btn" id="tpl-del">Delete template</button>` : ""}`}`;
+  const bar = $("filterbar");
+  bar.querySelectorAll("[data-f]").forEach(el => el.onchange = () => { view()[el.dataset.f] = el.value; render(); });
+  $("tpl").onchange = () => { const t = templates().find(x => x.name === $("tpl").value); if (t) { VIEW[TRACK] = { ...t.f }; naming = false; render(); } };
+  if ($("tpl-new")) $("tpl-new").onclick = () => { naming = true; renderBar(); $("tpl-name").focus(); };
+  if (naming) {
+    const ok = () => { const name = $("tpl-name").value.trim();
+      if (!name) return toast("Give the template a name");
+      if (templates().some(t => t.name.toLowerCase() === name.toLowerCase())) return toast("That name is taken");
+      naming = false; saveTemplates(t => (t.saved ||= []).push({ name, f: { ...view() } }), "Template saved"); };
+    $("tpl-ok").onclick = ok; $("tpl-name").onkeydown = e => e.key === "Enter" && ok();
+    $("tpl-cancel").onclick = () => { naming = false; renderBar(); };
+  }
+  if ($("tpl-default")) $("tpl-default").onclick = () => saveTemplates(t => t.default = current.name, "Opens with this from now on");
+  if ($("tpl-del")) $("tpl-del").onclick = () => saveTemplates(t => { t.saved = t.saved.filter(x => x.name !== current.name); if (t.default === current.name) delete t.default; }, "Template deleted");
+}
+
+/* ---- searches: sources, timing and job roles (read by scheduler.py) ------------------------ */
+const SEARCH_INFO = [
+  { id: "design_feeds", name: "Design jobs · LinkedIn and Naukri", every: 10, sources: { linkedin: "LinkedIn", naukri: "Naukri" } },
+  { id: "company", name: "Design jobs · company sites and boards", every: 10, sources: { career_pages: "Company career pages", remotive: "Remotive", remoteok: "RemoteOK", hirist: "Hirist", foundit: "Foundit", cutshort: "Cutshort", wellfound: "Wellfound" } },
+  { id: "quick", name: "Quick jobs · LinkedIn and Naukri", every: 20, sources: { linkedin: "LinkedIn", naukri: "Naukri" } },
+];
+const REPEATS = [[0, "Only at set times"], [10, "Every 10 minutes"], [20, "Every 20 minutes"], [30, "Every 30 minutes"], [60, "Every hour"], [120, "Every 2 hours"], [180, "Every 3 hours"], [360, "Every 6 hours"], [720, "Every 12 hours"], [1440, "Once a day"]];
+const IST_MS = 330 * 60e3;
+const conf = s => ({ enabled: true, every: s.every, times: [], off: [], ...SETTINGS.searches?.searches?.[s.id] });
+const clock = t => { const [h, m] = t.split(":").map(Number); return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`; };
+const istWhen = d => new Date(d).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+function nextRun(c, last, now = Date.now()) {
+  const next = c.every ? [last ? Math.max(now, +new Date(last) + c.every * 60e3) : now] : [];
+  for (const t of c.times) {
+    const [h, m] = t.split(":").map(Number), d = new Date(now + IST_MS);
+    let at = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), h, m) - IST_MS;
+    if (at <= now) at += 864e5;
+    next.push(at);
+  }
+  return next.length ? Math.min(...next) : null;
+}
+let saving = Promise.resolve();
+function changeSearches(change) {
+  const data = structuredClone(SETTINGS.searches || {});
+  data.searches ||= {}; data.roles ||= {};
+  change(data);
+  SETTINGS.searches = data; renderSearches();
+  saving = saving.then(() => saveSetting("searches", data)).then(() => toast("Saved"))
+    .catch(() => { toast("Couldn't save. Refresh and try again."); });
+}
+const editSearch = (id, change) => changeSearches(d => { const c = conf(SEARCH_INFO.find(s => s.id === id)); Object.assign(c, d.searches[id]); change(c); d.searches[id] = c; });
+function roleLists(track) {
+  const defaults = SETTINGS.search_defaults?.[track] || [], r = SETTINGS.searches?.roles?.[track] || {};
+  const removed = defaults.filter(t => (r.remove || []).includes(t)), added = (r.add || []).filter(t => !defaults.includes(t));
+  return { defaults, removed, added, active: [...defaults.filter(t => !removed.includes(t)), ...added] };
+}
+function editRoles(track, change) {
+  changeSearches(d => { const r = d.roles[track] ||= {}; r.add ||= []; r.remove ||= []; change(r); });
+}
+function renderSearches() {
+  if (!SETTINGS.searches) { $("searches").innerHTML = `<section class="panel">Loading search settings…</section>`; return; }
+  const cards = SEARCH_INFO.map(s => {
+    const c = conf(s), st = SETTINGS.search_status?.[s.id], on = Object.keys(s.sources).filter(k => !c.off.includes(k));
+    const next = c.enabled && on.length ? nextRun(c, st?.last) : null;
+    const problem = !c.enabled ? "" : !on.length ? "Won't run: tick at least one source." : next === null ? "Won't run: choose how often, or add a time." : "";
+    return `<section class="panel" data-search="${s.id}">
+      <div class="srow"><h3>${s.name}</h3><label class="switch"><input type="checkbox" data-act="enabled" ${c.enabled ? "checked" : ""}> On</label></div>
+      <p class="hint">${st ? `Last run ${istWhen(st.finished || st.last)} · ${st.ok ? "finished" : "failed"}` : "No run recorded yet"}${next ? ` · next ${next - Date.now() < 9e4 ? "within a couple of minutes" : "about " + istWhen(next)}` : ""}${c.enabled ? "" : " · switched off"}</p>
+      <div class="sblock"><div class="label">How often</div><select class="btn" data-act="every" aria-label="How often">${REPEATS.map(([v, t]) => `<option value="${v}" ${v === c.every ? "selected" : ""}>${t}</option>`).join("")}</select></div>
+      <div class="sblock"><div class="label">Also run at these times, every day</div><div class="schips">
+        ${c.times.map(t => `<span class="schip">${clock(t)}<button data-act="del-time" data-v="${t}" aria-label="Remove ${clock(t)}">×</button></span>`).join("")}
+        <input class="btn" type="time" data-time aria-label="Time to add"><button class="btn" data-act="add-time">Add time</button></div></div>
+      <div class="sblock"><div class="label">Sources</div><div class="checks">${Object.entries(s.sources).map(([k, n]) => `<label><input type="checkbox" data-act="source" data-v="${k}" ${c.off.includes(k) ? "" : "checked"}> ${n}</label>`).join("")}</div></div>
+      ${problem ? `<div class="warn">${problem}</div>` : ""}
+    </section>`;
+  });
+  const roles = [["design", "Design job roles", "New roles here get a tailored resume and may be emailed automatically, like other design matches."],
+                 ["quick", "Quick job roles", "Each new role is searched in Bangalore and in remote listings. Your other quick-job rules still apply."]].map(([track, name, note]) => {
+    const r = roleLists(track);
+    return `<section class="panel" data-roles="${track}"><h3>${name}</h3><p class="hint">${note}</p>
+      <div class="sblock"><div class="schips">${r.active.map(t => `<span class="schip">${esc(t)}<button data-act="del-role" data-v="${esc(t)}" aria-label="Remove ${esc(t)}">×</button></span>`).join("") || "No roles: these searches will find little."}</div></div>
+      <div class="sblock schips"><input class="btn" data-role maxlength="60" placeholder="Add a job role or keyword" aria-label="New job role"><button class="btn primary" data-act="add-role">Add</button></div>
+      ${r.removed.length ? `<div class="sblock"><div class="label">Removed (click to restore)</div><div class="schips">${r.removed.map(t => `<button class="schip off" data-act="restore-role" data-v="${esc(t)}">${esc(t)}</button>`).join("")}</div></div>` : ""}
+      <p class="hint" style="margin-top:12px">Removing a role stops searching for it; similar titles can still come up through other roles. More roles make each search slower and more likely to be rate-limited.</p>
+    </section>`;
+  });
+  $("searches").innerHTML = cards.join("") + roles.join("");
+}
+function searchAction(el) {
+  const id = el.closest("[data-search]")?.dataset.search, track = el.closest("[data-roles]")?.dataset.roles, act = el.dataset.act, v = el.dataset.v;
+  if (act === "enabled") editSearch(id, c => c.enabled = el.checked);
+  if (act === "every") editSearch(id, c => c.every = +el.value);
+  if (act === "source") editSearch(id, c => c.off = el.checked ? c.off.filter(x => x !== v) : [...c.off, v]);
+  if (act === "del-time") editSearch(id, c => c.times = c.times.filter(x => x !== v));
+  if (act === "add-time") {
+    const t = el.closest("[data-search]").querySelector("[data-time]").value;
+    if (!t) return toast("Pick a time first");
+    editSearch(id, c => c.times = [...new Set([...c.times, t])].sort());
+  }
+  if (act === "del-role") editRoles(track, r => { if (r.add.includes(v)) r.add = r.add.filter(x => x !== v); else r.remove.push(v); });
+  if (act === "restore-role") editRoles(track, r => r.remove = r.remove.filter(x => x !== v));
+  if (act === "add-role") {
+    const names = el.closest("[data-roles]").querySelector("[data-role]").value.split(",").map(x => x.trim().replace(/\s+/g, " ").toLowerCase()).filter(Boolean);
+    if (!names.length) return toast("Type a job role first");
+    const { active, defaults } = roleLists(track);
+    if (names.every(n => active.includes(n))) return toast("Already on the list");
+    editRoles(track, r => names.forEach(n => { r.remove = r.remove.filter(x => x !== n); if (!defaults.includes(n) && !r.add.includes(n)) r.add.push(n); }));
+  }
+}
+$("searches").addEventListener("click", e => { const el = e.target.closest("button[data-act]"); if (el) searchAction(el); });
+$("searches").addEventListener("change", e => { if (e.target.matches("input[type=checkbox][data-act], select[data-act]")) searchAction(e.target); });
+$("searches").addEventListener("keydown", e => { if (e.key === "Enter" && e.target.matches("[data-role]")) searchAction(e.target.closest("[data-roles]").querySelector("[data-act=add-role]")); });
+
 function visible(a) {
   const q = $("q").value.toLowerCase();
-  return (!q || (a.company + " " + a.title).toLowerCase().includes(q)) && (!F.mail || a.email) && !offBoard(a);
+  return (!q || (a.company + " " + a.title).toLowerCase().includes(q)) && (!F.mail || a.email) && passes(a);
 }
 
 function render() {
   const n = s => apps.filter(a => a.status === s).length;
   $("kpis").innerHTML = `<span><b>${apps.length}</b>found</span><span><b>${apps.filter(a => a.email).length}</b>emailed</span>
     <span><b>${n("applied") + n("interview") + n("offer") + n("rejected")}</b>applied</span><span><b>${n("interview")}</b>interviews</span><span><b>${n("offer")}</b>offers</span>` +
-    (apps.some(offBoard) ? `<span title="Still listed in All jobs"><b>${apps.filter(offBoard).length}</b>hidden: older than ${MAX_BOARD_HOURS}h${TRACK === "design" ? ` or under ${MIN_BOARD_FIT} fit` : ""}</span>` : "");
+    (apps.some(offBoard) ? `<span title="Still listed in All jobs"><b>${apps.filter(offBoard).length}</b>hidden by filters · <button class="linkish" id="showall">show all</button></span>` : "");
+  if ($("showall")) $("showall").onclick = () => { VIEW[TRACK] = {}; render(); };
+  renderBar();
   const cols = COLS.filter(c => (c.id !== "skipped" || F.skip) && (c.id !== "error" || n("error")));
   $("board").innerHTML = cols.map(c => {
     const items = apps.filter(a => a.status === c.id && visible(a))
-      .sort($("bsort").value === "near" ? byNearest : (a, b) => (b.found_at || "").localeCompare(a.found_at || ""));
+      .sort(sorter(view().sort, a => a.found_at, a => a.fit?.score));
     return `<section class="col" data-status="${c.id}">
       <div class="col-head"><span class="pill" style="background:${c.color}">${c.name}</span><span class="count">${items.length}</span></div>
       <div class="cards">${items.length ? items.map(card).join("") : `<div class="empty-col">Drop cards here</div>`}</div>
@@ -717,7 +921,7 @@ async function openPdf(a) {
 }
 
 function toggle(id, key) { $(id).onclick = () => { F[key] = !F[key]; $(id).classList.toggle("on", F[key]); render(); }; }
-for (const id of ["bsort", "jsort"]) { try { const v = localStorage.getItem(id); if (v) $(id).value = v; } catch (e) {}
+for (const id of ["jsort"]) { try { const v = localStorage.getItem(id); if (v) $(id).value = v; } catch (e) {}
   $(id).addEventListener("change", () => { try { localStorage.setItem(id, $(id).value); } catch (e) {} }); }
 toggle("f-mail", "mail"); toggle("f-skip", "skip");
 $("q").oninput = render;
@@ -725,7 +929,7 @@ $("reload").onclick = () => (archive = null, load()).catch(e => $("updated").tex
 
 setTrack(TRACK);
 function show() {
-  $("connect").hidden = !!token; $("app").hidden = !token; $("view-insights").hidden = true; $("view-jobs").hidden = true;
+  $("connect").hidden = !!token; $("app").hidden = !token; $("view-insights").hidden = true; $("view-jobs").hidden = true; $("view-searches").hidden = true;
   if (token) setView();
   if (token) load().catch(e => { $("updated").textContent = "Couldn't load: " + e.message;
     if (/^401/.test(e.message)) { try { localStorage.removeItem("dash_key"); } catch (x) {} token = null; show(); $("err").textContent = "That key didn't work."; } });

@@ -10,6 +10,8 @@ import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+import scheduler
+
 HERE = Path(__file__).resolve().parent
 CFG = json.loads((HERE / "config.json").read_text())
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
@@ -80,6 +82,8 @@ F = CFG["filters"]
 
 def title_ok(title):
     """Cheap first pass on the title alone (before fetching details)."""
+    if scheduler.is_added_role("design", title, EXCLUDE):
+        return True
     if EXCLUDE.search(title):
         return False
     return bool(DESIGN.search(title) or DESIGN_ENG.search(title))

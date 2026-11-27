@@ -3,6 +3,7 @@ import re
 import urllib.parse
 from datetime import datetime, timedelta, timezone
 
+import scheduler
 from core import CFG, HERE, log, new_job, strip_html, title_ok
 
 IST = timezone(timedelta(hours=5, minutes=30))
@@ -68,7 +69,8 @@ def _add_detail(job, d):
 def fetch(seen, queries=None, title_filter=None, detail_cap=None, pages_per_query=None, job_age_days=1):
     """queries: [(keyword, city or "")]; defaults to the design keywords across India."""
     title_filter = title_filter or title_ok
-    queries = queries or [(kw, "") for kw in CFG["search_keywords"]]
+    if queries is None:
+        queries = [(kw, "") for kw in scheduler.terms("design")]
     pages_per_query = pages_per_query or CFG.get("naukri_pages_per_keyword", 1)
     from playwright.sync_api import sync_playwright
 

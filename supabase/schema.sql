@@ -31,3 +31,19 @@ end $$;
 grant update (board) on public.applications to anon;
 drop policy if exists dash_edit on public.applications;
 create policy dash_edit on public.applications for update to anon using ((select public.dash_ok())) with check ((select public.dash_ok()));
+
+-- Dashboard settings. "searches" and "templates" are edited on the dashboard; the other two are written by the search.
+create table if not exists public.settings (
+  name text primary key, data jsonb not null default '{}'::jsonb, updated_at timestamptz not null default now());
+insert into public.settings (name) values ('searches'), ('templates'), ('search_status'), ('search_defaults') on conflict do nothing;
+alter table public.settings enable row level security;
+revoke all on public.settings from anon, authenticated;
+grant select on public.settings to anon;
+grant update (data, updated_at) on public.settings to anon;
+grant all on public.settings to service_role;
+drop policy if exists dash_read on public.settings;
+create policy dash_read on public.settings for select to anon using ((select public.dash_ok()));
+drop policy if exists dash_edit on public.settings;
+create policy dash_edit on public.settings for update to anon
+  using ((select public.dash_ok()) and name in ('searches', 'templates'))
+  with check ((select public.dash_ok()) and name in ('searches', 'templates'));

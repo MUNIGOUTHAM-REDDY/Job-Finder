@@ -5,6 +5,7 @@ import time
 import urllib.error
 import urllib.parse
 
+import scheduler
 from core import CFG, http_get, location_ok, log, new_job, now, parse_relative, strip_html, title_ok, usd_to_lpa
 
 SEARCH = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search"
@@ -61,7 +62,8 @@ def fetch(seen, last_run, searches=None, title_filter=None, loc_filter=None, max
     # Look back to the last successful run (covers Mac sleep), at least 30 min, at most 24 h;
     # the very first run looks back the full 24 h.
     window = 86400 if not last_run else int(min(86400, max(1800, (now() - last_run).total_seconds() + 600)))
-    searches = searches or [(kw, label, params) for kw in CFG["search_keywords"] for label, params in PLACES]
+    if searches is None:
+        searches = [(kw, label, params) for kw in scheduler.terms("design") for label, params in PLACES]
     title_filter, loc_filter = title_filter or title_ok, loc_filter or location_ok
     cards, ok = {}, True
     for kw, label, params in searches:

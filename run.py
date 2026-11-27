@@ -4,11 +4,14 @@
   python run.py --mac        LinkedIn + Naukri (on your Mac, every 10 min, slower at night)
   python run.py --feeds      LinkedIn + Naukri (GitHub Actions, around the clock)
   python run.py --cloud      company career sites + remote boards (GitHub Actions, around the clock)
+  python run.py --quick      quick-income search
+  python run.py --buttons    only collect Approve/Skip taps from Telegram
   python run.py --test       send a sample alert to Telegram
 """
 import sys
 from datetime import datetime, timedelta, timezone
 
+import scheduler
 from core import CFG, HERE, Seen, format_alert, load_env, log, new_job, now, process, relay_buttons, tg_send
 
 IST = timezone(timedelta(hours=5, minutes=30))
@@ -30,10 +33,11 @@ def quiet_hours_skip(seen, night_mode=True):
 
 def company_platforms():
     companies = sum(len(v) for v in CFG["companies"].values())
-    return [(f"Company career sites ({companies} companies)", "company site", ""),
-            ("Remotive", "Remotive", ""), ("RemoteOK", "RemoteOK", ""), ("Hirist", "Hirist", ""),
-            ("Foundit", "Foundit", ""), ("Cutshort", "Cutshort", ""), ("Wellfound", "Wellfound", ""),
-            ("Arbeitsagentur (Germany)", "Arbeitsagentur", "")]
+    platforms = [("career_pages", f"Company career sites ({companies} companies)", "company site"),
+                 ("remotive", "Remotive", "Remotive"), ("remoteok", "RemoteOK", "RemoteOK"), ("hirist", "Hirist", "Hirist"),
+                 ("foundit", "Foundit", "Foundit"), ("cutshort", "Cutshort", "Cutshort"),
+                 ("wellfound", "Wellfound", "Wellfound")]
+    return [(label, source, "") for key, label, source in platforms if scheduler.enabled("company", key)]
 
 
 def feeds(state="seen-mac.json", night_mode=True):
@@ -44,18 +48,22 @@ def feeds(state="seen-mac.json", night_mode=True):
     seen = Seen(HERE / "state" / state)
     if quiet_hours_skip(seen, night_mode):
         return
-    last = seen.meta.get("linkedin_last_run")
-    li_jobs, ok = src_linkedin.fetch(seen, datetime.fromisoformat(last) if last else None)
-    if ok:
-        seen.meta["linkedin_last_run"] = now().isoformat()
-    nk_note = ""
-    try:
-        nk_jobs = src_naukri.fetch(seen)
-    except Exception as e:
-        log("naukri failed:", e)
-        nk_jobs, nk_note = [], "couldn't load this time"
-    process(li_jobs + nk_jobs, seen, "LinkedIn + Naukri",
-            [("LinkedIn", "LinkedIn", "" if ok else "rate limited, will retry"), ("Naukri", "Naukri", nk_note)])
+    li_jobs, nk_jobs, platforms = [], [], []
+    if scheduler.enabled("design_feeds", "linkedin"):
+        last = seen.meta.get("linkedin_last_run")
+        li_jobs, ok = src_linkedin.fetch(seen, datetime.fromisoformat(last) if last else None)
+        if ok:
+            seen.meta["linkedin_last_run"] = now().isoformat()
+        platforms.append(("LinkedIn", "LinkedIn", "" if ok else "rate limited, will retry"))
+    if scheduler.enabled("design_feeds", "naukri"):
+        note = ""
+        try:
+            nk_jobs = src_naukri.fetch(seen)
+        except Exception as e:
+            log("naukri failed:", e)
+            note = "couldn't load this time"
+        platforms.append(("Naukri", "Naukri", note))
+    process(li_jobs + nk_jobs, seen, "LinkedIn + Naukri", platforms)
 
 
 def cloud():
@@ -88,4 +96,4 @@ if __name__ == "__main__":
     if sys.argv[1:2] != ["--test"]:
         relay_buttons()
     {"--mac": feeds, "--feeds": lambda: feeds("seen-feeds.json", night_mode=False),
-     "--cloud": cloud, "--quick": quick, "--test": test}.get(next(iter(sys.argv[1:]), ""), lambda: print(__doc__))()
+     "--cloud": cloud, "--quick": quick, "--buttons": lambda: None, "--test": test}.get(next(iter(sys.argv[1:]), ""), lambda: print(__doc__))()

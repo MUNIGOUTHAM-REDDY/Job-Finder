@@ -3,6 +3,8 @@
 .chrome-profile/
 logs/
 state/seen-mac.json
+state/schedule.json
+state/search-settings.json
 __pycache__/
 inbox/
 apps/

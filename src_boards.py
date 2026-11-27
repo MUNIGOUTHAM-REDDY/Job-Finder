@@ -6,6 +6,7 @@ import urllib.parse
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
+import scheduler
 from core import http_get, http_json, new_job, strip_html, usd_to_lpa
 
 # Each board searches differently, so each gets its own short list of queries.
@@ -26,7 +27,7 @@ def _india(loc):
 
 def hirist(_):
     jobs = []
-    for q in HIRIST_QUERIES:
+    for q in HIRIST_QUERIES + scheduler.added("design"):
         for page in range(3):
             data = http_json("https://gladiator.hirist.tech/job/search?" + urllib.parse.urlencode(
                 {"query": q, "page": page, "size": 20, "posting": 7}))
@@ -51,7 +52,7 @@ def hirist(_):
 
 def foundit(_):
     jobs = []
-    for q in FOUNDIT_QUERIES:
+    for q in FOUNDIT_QUERIES + scheduler.added("design"):
         qs = urllib.parse.quote(q)
         # Foundit rejects "Accept: application/json" and requests without its own search page as referrer.
         raw = http_get(f"https://www.foundit.in/middleware/jobsearch?start=0&limit=50&query={qs}"

@@ -7,6 +7,7 @@ import html
 import re
 from datetime import datetime, timedelta, timezone
 
+import scheduler
 from core import (CFG, HERE, L, LOC_BLOCKED, LOC_REMOTE, Seen, _inbox_add, _rx, _slim, age_hours, fill_experience,
                   log, norm_key, now, record_found, tg_send)
 
@@ -52,6 +53,8 @@ IST = timezone(timedelta(hours=5, minutes=30))
 
 def title_ok(title):
     """Entry-level roles you could start quickly (support, ops, sales, admin, data, design gigs...)."""
+    if scheduler.is_added_role("quick", title, EXCLUDE):
+        return True
     return bool(INCLUDE.search(title)) and not EXCLUDE.search(title)
 
 
@@ -204,16 +207,19 @@ def run():
     seen.first_run = False  # no "is live" message or 24 h backfill burst for this search
     places = {"Bengaluru": {"location": "Bengaluru, Karnataka, India"}, "Remote": {"location": "India", "f_WT": "2"}}
     last = seen.meta.get("linkedin_last_run")
-    li, ok = src_linkedin.fetch(seen, dt.fromisoformat(last) if last else None,
-                                searches=[(kw, place, places[place]) for kw, place in Q["linkedin_queries"]],
-                                title_filter=title_ok, loc_filter=location_ok,
-                                max_results=Q["linkedin_max_results"], detail_cap=Q["linkedin_max_details"])
-    if ok:
-        seen.meta["linkedin_last_run"] = now().isoformat()
-    try:
-        nk = src_naukri.fetch(seen, queries=[tuple(x) for x in Q["naukri_queries"]], title_filter=title_ok,
-                              detail_cap=Q["naukri_max_details"], pages_per_query=1, job_age_days=3)
-    except Exception as e:
-        log("naukri (quick) failed:", e)
-        nk = []
+    linkedin_queries, naukri_queries = scheduler.quick_queries()
+    li, nk = [], []
+    if scheduler.enabled("quick", "linkedin"):
+        li, ok = src_linkedin.fetch(seen, dt.fromisoformat(last) if last else None,
+                                    searches=[(kw, place, places[place]) for kw, place in linkedin_queries],
+                                    title_filter=title_ok, loc_filter=location_ok,
+                                    max_results=Q["linkedin_max_results"], detail_cap=Q["linkedin_max_details"])
+        if ok:
+            seen.meta["linkedin_last_run"] = now().isoformat()
+    if scheduler.enabled("quick", "naukri"):
+        try:
+            nk = src_naukri.fetch(seen, queries=[tuple(x) for x in naukri_queries], title_filter=title_ok,
+                                  detail_cap=Q["naukri_max_details"], pages_per_query=1, job_age_days=3)
+        except Exception as e:
+            log("naukri (quick) failed:", e)
     process(li + nk, seen, "Quick jobs")

@@ -221,9 +221,15 @@ The **dashboard** is `docs/index.html`, published with GitHub Pages. It has no d
 
 This needs four more secrets here: `ANTHROPIC_API_KEY`, `GMAIL_USER`, `GMAIL_APP_PASSWORD` and `DISPATCH_TOKEN` (a fine-grained token with **Contents: read and write** on `job-applications` only, used to fetch the worker and save the log). The worker runs here rather than in the private repo because GitHub Actions is free for public repos.
 
+## Searches tab: sources, timing and job roles
+
+The dashboard's **Searches** tab controls the cloud search without editing files. For each search you can switch it on or off, choose how often it repeats (or "only at set times"), add any number of daily times (India time), and untick sources. You can also add or remove job roles. Settings are saved in Supabase and read by `scheduler.py`; anything you haven't changed comes from `config.json`. A set time that's missed by more than 90 minutes is skipped. Needs the `settings` table in `supabase/schema.sql`.
+
+The **Board** has filters (time, fit, source, location, pay and more) and sorting. Save a combination as a template and make it the one the Board opens with.
+
 ## Quick jobs (second search)
 
-A second search looks for any non-design job that can be started quickly (support, BPO, back office, part-time and similar; design roles are left to the main search), for income while the design search continues. It runs every other cycle (~20 min) from `quick.py`, with settings under `quick` in `config.json`:
+A second search looks for any non-design job that can be started quickly (support, BPO, back office, part-time and similar; design roles are left to the main search), for income while the design search continues. It runs every 20 minutes by default from `quick.py`, with settings under `quick` in `config.json`:
 
 - **Where:** remote roles open to India, or on-site within about 4–6 km of HSR Layout Sector 7. Postings rarely give coordinates, so this matches locality names (`near_hsr` and `far_from_hsr`). "Bengaluru" with no area is kept and labelled "area not stated".
 - **Pay:** full-time roles must state at least ₹22k a month if they state pay at all. Part-time has no minimum.
@@ -287,6 +293,7 @@ The first time, macOS may ask whether Python can access the folder (for example 
 | File | What it is |
 |---|---|
 | `config.json` | All filters, keywords and company lists |
+| `scheduler.py` | Decides which searches run and when, from the Searches tab |
 | `run.py` | Entry point. `--feeds` (LinkedIn + Naukri, cloud), `--cloud` (company sites, cloud), `--mac` (LinkedIn + Naukri, Mac), `--test` (sample alert) |
 | `core.py` | Shared logic: filters, the coloured tiers, duplicate checks, contact lookup, Telegram messages |
 | `src_linkedin.py` | LinkedIn public job search |

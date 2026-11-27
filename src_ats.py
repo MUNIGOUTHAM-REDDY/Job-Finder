@@ -3,6 +3,7 @@ import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
+import scheduler
 import src_boards
 from core import CFG, http_get, http_json, location_ok, log, new_job, strip_html, title_ok, usd_to_lpa
 
@@ -128,8 +129,10 @@ FETCHERS = {"greenhouse": greenhouse, "lever": lever, "ashby": ashby, "smartrecr
 
 
 def fetch():
-    tasks = [(FETCHERS[k], s) for k in FETCHERS for s in CFG["companies"].get(k, [])]
-    tasks += [(remotive, None), (remoteok, None)] + [(fn, None) for fn in src_boards.FETCHERS]
+    tasks = []
+    if scheduler.enabled("company", "career_pages"):
+        tasks = [(FETCHERS[k], s) for k in FETCHERS for s in CFG["companies"].get(k, [])]
+    tasks += [(fn, None) for fn in [remotive, remoteok] + src_boards.FETCHERS if scheduler.enabled("company", fn.__name__)]
 
     def run(t):
         fn, slug = t
