@@ -6,6 +6,7 @@
 <meta name="robots" content="noindex">
 <title>Application Board</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -133,6 +134,17 @@ a { color: #5b4bd5; }
 .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: #1f2430; color: #fff; padding: 8px 14px; border-radius: 8px; font-size: 12px; opacity: 0; transition: opacity .2s; z-index: 20; }
 .toast.on { opacity: 1; }
 @media (max-width: 640px) { .top, .toolbar { padding-left: 16px; padding-right: 16px; } .board { padding: 4px 16px 24px; } .kpis { margin-left: 0; } }
+
+/* map */
+.mapwrap { display: grid; grid-template-columns: 340px 1fr; gap: 12px; padding: 0 20px 20px; height: calc(100vh - 170px); min-height: 420px; }
+#map { border-radius: 10px; border: 1px solid var(--line); z-index: 1; }
+.mlist { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: auto; }
+.mi { padding: 9px 12px; border-bottom: 1px solid var(--line); cursor: pointer; }
+.mi:hover, .mi.on { background: var(--accent-soft); }
+.mi b { display: block; font-weight: 600; }
+.mi span { color: var(--muted); font-size: 12px; }
+.mi .km { float: right; color: var(--ink); font-variant-numeric: tabular-nums; }
+@media (max-width: 760px) { .mapwrap { grid-template-columns: 1fr; height: auto; } #map { height: 55vh; } .mlist { max-height: 40vh; } }
 </style>
 </head>
 <body>
@@ -145,14 +157,14 @@ a { color: #5b4bd5; }
       <button id="t-design" data-track="design">Design jobs</button><button id="t-quick" data-track="quick">Quick jobs</button>
     </div>
   </div>
-  <nav class="tabs"><a class="tab on" href="#board" data-view="board">Board</a><a class="tab" href="#jobs" data-view="jobs">All jobs</a><a class="tab" href="#insights" data-view="insights">Insights</a></nav>
+  <nav class="tabs"><a class="tab on" href="#board" data-view="board">Board</a><a class="tab" href="#jobs" data-view="jobs">All jobs</a><a class="tab" href="#insights" data-view="insights">Insights</a><a class="tab" id="tab-map" href="#map" data-view="map" hidden>Map</a></nav>
 </header>
 
 <section class="connect" id="connect" hidden>
   <h2>Connect your application log</h2>
-  <p>Paste your GitHub fine-grained token (the <code>job-finder</code> one, with Contents read and write on <code>job-applications</code>).
-     It's kept only in this browser and sent only to GitHub.</p>
-  <input id="token" type="password" placeholder="github_pat_…" autocomplete="off">
+  <p>Open your private dashboard link once, or paste the key from it here (<code>DASH_KEY</code> in your <code>.env</code> file).
+     It's kept only in this browser and sent only to your Supabase project.</p>
+  <input id="token" type="password" placeholder="Dashboard key" autocomplete="off">
   <button class="btn primary" id="save">Connect</button>
   <p id="err" style="color:#b42318"></p>
 </section>
@@ -198,12 +210,24 @@ a { color: #5b4bd5; }
   <div class="ins" id="ins"></div>
 </div>
 
+<div id="view-map" hidden>
+  <div class="toolbar">
+    <label class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="mq" placeholder="Search BPO or company"></label>
+    <select class="btn" id="mrad"><option value="2">Within 2 km</option><option value="4">Within 4 km</option><option value="6" selected>Within 6 km</option><option value="7">Within 7 km</option></select>
+    <button class="btn" id="mloc">📍 Use my location</button>
+    <span class="updated" id="mnote" style="margin-left:0"></span>
+  </div>
+  <div class="mapwrap"><div class="mlist" id="mlist"></div><div id="map"></div></div>
+</div>
+
 <div class="scrim" id="scrim"></div>
 <aside class="drawer" id="drawer" aria-label="Job details"></aside>
 <div class="toast" id="toast"></div>
 
 <script>
-const REPO = { owner: "MUNIGOUTHAM-REDDY", name: "job-applications" };
+// The publishable key is safe to publish: the tables only open with the private dashboard key (supabase/schema.sql).
+const SUPABASE = { url: "https://gxikjrnijfmmtbnokvqu.supabase.co", key: "sb_publishable_4XSr1n8mc6Qdae3eVgykaw_ye639e_g" };
 const COLS = [
   { id: "prepared",  name: "Waiting for you", color: "#87909e" },
   { id: "approved",  name: "Approved",        color: "#4466ff" },
@@ -219,7 +243,16 @@ let token = null, allApps = [], apps = [], openKey = null, TRACK = "design";
 try { TRACK = localStorage.getItem("track") || "design"; } catch (e) {}
 const trackOf = x => x.track || "design";
 const F = { mail: false, fit: false, skip: false };
-try { token = localStorage.getItem("gh_token"); } catch (e) {}
+try { token = localStorage.getItem("dash_key"); } catch (e) {}
+// A private link ending in #key=... saves the key, then removes it from the address bar.
+function takeLinkKey() {
+  const m = location.hash.match(/^#key=([\w-]+)$/);
+  if (!m) return false;
+  token = m[1]; try { localStorage.setItem("dash_key", token); localStorage.removeItem("gh_token"); } catch (e) {}
+  history.replaceState(null, "", location.pathname + location.search);
+  return true;
+}
+takeLinkKey();
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -228,21 +261,32 @@ const ago = s => { if (!s) return ""; const m = (Date.now() - new Date(s)) / 6e4
   return m < 60 ? `${Math.max(1, m | 0)}m ago` : m < 1440 ? `${(m / 60) | 0}h ago` : `${(m / 1440) | 0}d ago`; };
 const toast = t => { const el = $("toast"); el.textContent = t; el.classList.add("on"); setTimeout(() => el.classList.remove("on"), 1800); };
 
-async function gh(path, opts = {}) {
-  const r = await fetch("https://api.github.com" + path, { ...opts,
-    headers: { Authorization: "Bearer " + token, Accept: "application/vnd.github+json", ...(opts.headers || {}) } });
+async function sb(path, opts = {}) {
+  const r = await fetch(SUPABASE.url + "/rest/v1/" + path, { ...opts,
+    headers: { apikey: SUPABASE.key, "x-dash-key": token, "Content-Type": "application/json", ...(opts.headers || {}) } });
   if (!r.ok) throw new Error(r.status + " " + (await r.text()).slice(0, 140));
-  return r;
+  return r.status === 204 ? null : r.json();
+}
+async function sbAll(path) {  // Supabase returns at most 1000 rows a request: read pages, four at a time
+  const rows = [];
+  for (let at = 0; ; at += 4000) {
+    const pages = await Promise.all([0, 1000, 2000, 3000].map(n => sb(`${path}&limit=1000&offset=${at + n}`)));
+    pages.forEach(p => rows.push(...p));
+    if (pages.some(p => p.length < 1000)) return rows;
+  }
+}
+// What the search recorded (data) with your dashboard edits (board) on top.
+function toApp({ key, data, board }) {
+  const events = [...(data.events || []), ...(board.events || [])].sort((a, b) => new Date(a.at) - new Date(b.at));
+  return { ...data, ...board, key, events, _data: data, _board: board };
 }
 
 async function load() {
   $("updated").textContent = "Loading…";
-  const q = `query { repository(owner:"${REPO.owner}", name:"${REPO.name}") { object(expression:"HEAD:applications") {
-    ... on Tree { entries { name oid object { ... on Blob { text } } } } } } }`;
-  const j = await (await gh("/graphql", { method: "POST", body: JSON.stringify({ query: q }) })).json();
-  if (j.errors) throw new Error(j.errors[0].message);
-  allApps = (j.data.repository?.object?.entries || []).filter(e => e.name.endsWith(".json"))
-    .map(e => ({ ...JSON.parse(e.object.text), _sha: e.oid, _file: e.name }));
+  const rows = await sbAll("applications?select=key,data,board&order=key");
+  // A wrong key doesn't raise an error, it just sees no rows.
+  if (!rows.length) throw new Error("401 no data for this key");
+  allApps = rows.map(toApp);
   apps = allApps.filter(a => trackOf(a) === TRACK);
   $("updated").textContent = "Updated " + new Date().toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" });
   render();
@@ -300,18 +344,11 @@ function loadArchive() {  // shared by Board details, All jobs and Insights
 }
 async function loadInsights() {
   $("ins-note").textContent = $("jnote").textContent = "Loading job archive…";
-  const q = `query { repository(owner:"${REPO.owner}", name:"${REPO.name}") {
-    jobs: object(expression:"HEAD:jobs") { ... on Tree { entries { name object { ... on Tree { entries { name object { ... on Blob { text } } } } } } } }
-    profile: object(expression:"HEAD:profile.json") { ... on Blob { text } }
-    overrides: object(expression:"HEAD:jobs/overrides.json") { ... on Blob { text } } } }`;
-  const j = await (await gh("/graphql", { method: "POST", body: JSON.stringify({ query: q }) })).json();
-  if (j.errors) throw new Error(j.errors[0].message);
-  profileText = (j.data.repository.profile?.text || "").toLowerCase();
-  archive = [];
-  const ov = (() => { try { return JSON.parse(j.data.repository.overrides?.text || "{}").outcomes || {}; } catch (e) { return {}; } })();
-  for (const m of j.data.repository.jobs?.entries || [])
-    for (const f of (m.object?.entries || []).filter(x => x.name.endsWith(".jsonl")))
-      for (const line of (f.object?.text || "").split("\n")) if (line.trim()) archive.push(JSON.parse(line));
+  const [rows, docs] = await Promise.all([sbAll("jobs?select=data&order=seen_at.desc,id"), sb("docs?select=name,data")]);
+  const doc = n => docs.find(d => d.name === n)?.data;
+  profileText = JSON.stringify(doc("profile") || {}).toLowerCase();
+  const ov = doc("overrides")?.outcomes || {};
+  archive = rows.map(r => r.data);
   // Quick-job entries saved before 17 Nov had "(Remote)" wrongly appended by the search; it never came from the job.
   archive.forEach(r => { if (ov[r.id]) r.outcome = ov[r.id]; if (r.track === "quick" && r.location) r.location = r.location.replace(/ \(Remote\)$/, ""); });
   archive.sort((a, b) => (b.seen_at || "").localeCompare(a.seen_at || ""));
@@ -325,7 +362,7 @@ const WHY = {
   alerted: "Sent to you", location: "Outside Hyderabad, Bangalore or remote", experience: "Asks for too much experience",
   "too many applicants": "Too many applicants", "too old": "Posted too long ago", salary: "Pays below 6 LPA",
   "design-eng without UI signals": "Engineering role, not UI design", "agency or job drive": "Agency or job drive",
-  "possible scam": "Possible scam", "not a quick-start role": "Not a quick-start role", "farther than 6 km from HSR": "Farther than 6 km from HSR",
+  "possible scam": "Possible scam", "not a quick-start role": "Not a quick-start role", "not for freshers": "Not for freshers", "farther than 6 km from HSR": "Farther than 6 km from HSR",
 };
 const whyShort = r => WHY[r.outcome] || r.outcome;
 function whyLong(r) {
@@ -336,6 +373,7 @@ function whyLong(r) {
                                      : `Location "${r.location || "unknown"}" isn't Hyderabad, Bangalore or a remote role open to India.`;
   if (o === "farther than 6 km from HSR") return `Location "${r.location}" is farther than about 6 km from HSR Layout Sector 7, and it isn't remote.`;
   if (o === "not a quick-start role") return "The title isn't one of the entry-level role types this search looks for (support, BPO, back office, data, sales, admin, trainee, design gigs…).";
+  if (o === "not for freshers") return `Not a fresher role: ${r.exp_min ? "asks for at least " + r.exp_min + " year(s) of experience" : r.exp_text && /level/i.test(r.exp_text) ? "LinkedIn lists it as " + r.exp_text : "the post asks for prior experience or rules out freshers"}.`;
   if (o === "agency or job drive") return "Posted by a recruitment agency or consultancy, or it's a walk-in / mass hiring drive.";
   if (o === "possible scam") return "The post shows scam signs: fees or deposits, pay-per-day promises, typing/copy-paste work, Telegram/WhatsApp-only contact, or part-time pay that's too good to be true.";
   if (o === "experience") return `Asks for at least ${r.exp_min} years (${r.exp_text || "from the description"}). Your limit is a minimum of ${quick ? "1 year" : "5 years"} or less.`;
@@ -470,19 +508,80 @@ function renderInsights() {
 }
 $("period").onchange = renderInsights; $("scope").onchange = renderInsights;
 
+/* ---- Map: BPO / call-centre offices near you (docs/bpo.json, built by bpo_map.py from OpenStreetMap) ---- */
+let MAP = null, MAPDATA = null, MY = null, markers = [], mapLayers = [];
+const dist = (a, b, c, d) => { const p = Math.PI / 180, h = Math.sin((c - a) * p / 2) ** 2 + Math.cos(a * p) * Math.cos(c * p) * Math.sin((d - b) * p / 2) ** 2; return 12742 * Math.asin(Math.sqrt(h)); };
+async function loadScript(src) { await new Promise((ok, no) => { const e = document.createElement("script"); e.src = src; e.onload = ok; e.onerror = no; document.head.appendChild(e); }); }
+async function liveBpos() {
+  // Fallback when bpo.json hasn't been built: ask OpenStreetMap directly (public servers are sometimes busy).
+  const [la, lo] = [12.9116, 77.6474];
+  const q = `[out:json][timeout:25];(nwr["office"="call_centre"](around:7000,${la},${lo});nwr["name"~"BPO|call ?cent|KPO|contact cent|customer (care|support|service)|teleperformance|concentrix|conduent|genpact|startek|firstsource|sutherland|alorica|foundever|ibex|taskus|ttec|infosys bpm|xl dynamics",i](around:7000,${la},${lo}););out center tags 300;`;
+  for (const host of ["overpass-api.de", "overpass.kumi.systems", "overpass.private.coffee"]) {
+    try {
+      const r = await fetch(`https://${host}/api/interpreter`, { method: "POST", body: "data=" + encodeURIComponent(q), headers: { "Content-Type": "application/x-www-form-urlencoded" } });
+      if (!r.ok) continue;
+      const items = (await r.json()).elements.filter(e => e.tags?.name && (e.center || e.lat)).map(e => { const c = e.center || e, t = e.tags;
+        return { name: t.name, lat: c.lat, lon: c.lon, addr: ["addr:housename", "addr:street", "addr:suburb", "addr:city"].map(k => t[k]).filter(Boolean).join(", ") }; });
+      return { center: [la, lo], items };
+    } catch (e) {}
+  }
+  throw new Error("the OpenStreetMap servers are busy, try again in a few minutes");
+}
+async function initMap() {
+  if (MAP) return renderMap();
+  $("mnote").textContent = "Loading map…";
+  try {
+    if (!window.L) await loadScript("https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js");
+    MAPDATA = await fetch("bpo.json", { cache: "no-cache" }).then(r => r.ok ? r.json() : Promise.reject()).catch(liveBpos);
+  } catch (e) { $("mnote").textContent = "Couldn't load the map: " + e.message; return; }
+  MY = { lat: MAPDATA.center[0], lon: MAPDATA.center[1], label: "HSR Layout, Sector 7" };
+  MAP = L.map("map").setView([MY.lat, MY.lon], 13);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap contributors" }).addTo(MAP);
+  renderMap();
+}
+function renderMap() {
+  mapLayers.forEach(l => l.remove()); mapLayers = []; markers = [];
+  const max = +$("mrad").value, q = $("mq").value.toLowerCase();
+  const items = MAPDATA.items.map(o => ({ ...o, d: dist(MY.lat, MY.lon, o.lat, o.lon) }))
+    .filter(o => o.d <= max && (!q || (o.name + " " + o.addr).toLowerCase().includes(q))).sort((a, b) => a.d - b.d);
+  mapLayers.push(L.circle([MY.lat, MY.lon], { radius: max * 1000, color: "#7b68ee", weight: 1, fillOpacity: .05 }).addTo(MAP),
+    L.marker([MY.lat, MY.lon], { icon: L.divIcon({ className: "", html: '<div style="font-size:26px;line-height:26px">🏠</div>', iconSize: [26, 26], iconAnchor: [13, 13] }) }).addTo(MAP).bindPopup("<b>You</b><br>" + esc(MY.label)));
+  $("mlist").innerHTML = items.length ? items.map((o, i) => `<div class="mi" data-i="${i}"><span class="km">${o.d.toFixed(1)} km</span><b>${esc(o.name)}</b><span>${esc(o.addr) || "Address not listed"}</span></div>`).join("")
+    : '<div class="mi"><span>No BPOs found in this range.</span></div>';
+  items.forEach((o, i) => {
+    const m = L.marker([o.lat, o.lon]).addTo(MAP).bindPopup(`<b>${esc(o.name)}</b><br>${esc(o.addr)}<br>${o.d.toFixed(1)} km away<br>` +
+      `<a target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${o.lat},${o.lon}">Directions</a> · ` +
+      `<a target="_blank" rel="noopener" href="https://www.google.com/search?q=${encodeURIComponent(o.name + " careers Bengaluru")}">Careers</a>`);
+    markers.push(m); mapLayers.push(m);
+  });
+  document.querySelectorAll(".mi[data-i]").forEach(el => el.onclick = () => { const m = markers[+el.dataset.i]; MAP.setView(m.getLatLng(), 16); m.openPopup();
+    document.querySelectorAll(".mi").forEach(x => x.classList.toggle("on", x === el)); });
+  $("mnote").textContent = `${items.length} BPO${items.length === 1 ? "" : "s"} within ${max} km of ${MY.label}`;
+  MAP.fitBounds(L.circle([MY.lat, MY.lon], { radius: max * 1000 }).getBounds());
+  setTimeout(() => MAP.invalidateSize(), 50);
+}
+$("mrad").onchange = () => MAP && renderMap(); $("mq").oninput = () => MAP && renderMap();
+$("mloc").onclick = () => {
+  if (!navigator.geolocation) return $("mnote").textContent = "Your browser can't share location.";
+  $("mnote").textContent = "Finding you…";
+  navigator.geolocation.getCurrentPosition(p => { MY = { lat: p.coords.latitude, lon: p.coords.longitude, label: "your location" }; renderMap(); },
+    () => $("mnote").textContent = "Location was blocked; showing HSR Layout Sector 7.", { timeout: 10000 });
+};
+
 function setView() {
-  const v = { "#insights": "insights", "#jobs": "jobs" }[location.hash] || "board";
+  const v = { "#insights": "insights", "#jobs": "jobs", "#map": TRACK === "quick" ? "map" : "" }[location.hash] || "board";
   document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.dataset.view === v));
   if (!token) return;
-  $("app").hidden = v !== "board"; $("view-insights").hidden = v !== "insights"; $("view-jobs").hidden = v !== "jobs";
-  if (v !== "board" && !archive) loadArchive().catch(e => $("ins-note").textContent = $("jnote").textContent = "Couldn't load: " + e.message);
+  $("app").hidden = v !== "board"; $("view-insights").hidden = v !== "insights"; $("view-jobs").hidden = v !== "jobs"; $("view-map").hidden = v !== "map";
+  if (v === "map") initMap();
+  if (v !== "board" && v !== "map" && !archive) loadArchive().catch(e => $("ins-note").textContent = $("jnote").textContent = "Couldn't load: " + e.message);
 }
 window.addEventListener("hashchange", setView);
 
 function setTrack(t) {
   TRACK = t; try { localStorage.setItem("track", t); } catch (e) {}
   document.querySelectorAll(".seg button").forEach(b => b.classList.toggle("on", b.dataset.track === t));
-  $("f-mail").hidden = $("f-fit").hidden = t === "quick";
+  $("f-mail").hidden = $("f-fit").hidden = t === "quick"; $("tab-map").hidden = t !== "quick"; if (t !== "quick" && location.hash === "#map") location.hash = "#board"; else setView();
   COLS[0].name = NAME.prepared = t === "quick" ? "New" : "Waiting for you";
   apps = allApps.filter(a => trackOf(a) === TRACK);
   if (fullArchive) archive = fullArchive.filter(r => trackOf(r) === TRACK);
@@ -589,14 +688,13 @@ async function setStatus(a, status) {
 }
 
 async function update(a, changes, eventText) {
-  const rec = { ...a, ...changes }; delete rec._sha; delete rec._file;
-  if (eventText) rec.events = [...(rec.events || []), { at: new Date().toISOString().slice(0, 19) + "+00:00", text: eventText }];
-  const bytes = new TextEncoder().encode(JSON.stringify(rec, null, 2) + "\n");
-  let bin = ""; bytes.forEach(b => bin += String.fromCharCode(b));
+  const board = { ...a._board, ...changes };
+  if (eventText) board.events = [...(a._board.events || []), { at: new Date().toISOString().slice(0, 19) + "+00:00", text: eventText }];
   try {
-    const r = await gh(`/repos/${REPO.owner}/${REPO.name}/contents/applications/${a._file}`, { method: "PUT",
-      body: JSON.stringify({ message: `Board: ${a.company} ${Object.keys(changes).join(", ")}`, content: btoa(bin), sha: a._sha }) });
-    Object.assign(a, rec, { _sha: (await r.json()).content.sha });
+    const rows = await sb(`applications?key=eq.${encodeURIComponent(a.key)}&select=key,data,board`,
+      { method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify({ board }) });
+    if (!rows.length) throw new Error("not saved");
+    Object.assign(a, toApp(rows[0]));
     if (openKey === a.key) openDrawer(a.key);
     return true;
   } catch (e) { toast("Couldn't save. Refresh and try again."); return false; }
@@ -604,9 +702,12 @@ async function update(a, changes, eventText) {
 
 async function openPdf(a) {
   const w = window.open("", "_blank");
-  const r = await gh(`/repos/${REPO.owner}/${REPO.name}/contents/${a.resume}`, { headers: { Accept: "application/vnd.github.raw" } });
-  const url = URL.createObjectURL(new Blob([await r.arrayBuffer()], { type: "application/pdf" }));
-  if (w) w.location = url; else location.href = url;
+  try {
+    const [row] = await sb(`resumes?select=pdf_base64&name=eq.${encodeURIComponent(a.resume.split("/").pop())}`);
+    const bytes = Uint8Array.from(atob(row.pdf_base64), c => c.charCodeAt(0));
+    const url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+    if (w) w.location = url; else location.href = url;
+  } catch (e) { w?.close(); toast("Couldn't open the resume. Try again."); }
 }
 
 function toggle(id, key) { $(id).onclick = () => { F[key] = !F[key]; $(id).classList.toggle("on", F[key]); render(); }; }
@@ -621,9 +722,10 @@ function show() {
   $("connect").hidden = !!token; $("app").hidden = !token; $("view-insights").hidden = true; $("view-jobs").hidden = true;
   if (token) setView();
   if (token) load().catch(e => { $("updated").textContent = "Couldn't load: " + e.message;
-    if (/^401/.test(e.message)) { try { localStorage.removeItem("gh_token"); } catch (x) {} token = null; show(); $("err").textContent = "That token didn't work."; } });
+    if (/^401/.test(e.message)) { try { localStorage.removeItem("dash_key"); } catch (x) {} token = null; show(); $("err").textContent = "That key didn't work."; } });
 }
-$("save").onclick = () => { token = $("token").value.trim(); try { localStorage.setItem("gh_token", token); } catch (e) {} show(); };
+$("save").onclick = () => { token = $("token").value.trim().replace(/^.*#key=/, ""); try { localStorage.setItem("dash_key", token); } catch (e) {} show(); };
+window.addEventListener("hashchange", () => takeLinkKey() && show());
 show();
 </script>
 </body>

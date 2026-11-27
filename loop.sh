@@ -28,6 +28,9 @@ while [ "$(date +%s)" -lt "$end" ]; do
       || echo "couldn't save applications"
   fi
 
+  # Copy new and changed records to Supabase, which the dashboard reads.
+  [ -n "${SUPABASE_SECRET_KEY:-}" ] && { python supabase_sync.py apps || echo "couldn't sync to Supabase"; }
+
   git add state/seen-cloud.json state/seen-feeds.json state/seen-quick.json 2>/dev/null
   git diff --cached --quiet || { git commit -q -m "Update seen jobs" && push || echo "couldn't save seen jobs"; }
 

@@ -29,6 +29,8 @@ jobs:
       - name: Check every 10 minutes
         env:
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}

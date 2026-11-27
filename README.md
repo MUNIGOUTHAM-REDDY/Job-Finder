@@ -217,7 +217,7 @@ After each check, the application worker (code and log in the private `job-appli
 4. Logs every step, one file per job, in that private repo.
 5. Saves every design job the checks see (including ones filtered out) with its description and the skills it mentions, in `jobs/<month>/` there. The dashboard's **Insights** tab turns this into the most-asked skills and tools, and which of them your resume is missing.
 
-The **dashboard** is `docs/index.html`, published with GitHub Pages. It has no data in it: when opened, it asks for a GitHub token and reads the log from the private repo, so your applications stay private. You can change a job's status (Applied, Interview, Offer, Rejected) and keep notes there.
+The **dashboard** is `docs/index.html`, published with GitHub Pages. It has no data in it: it reads from Supabase, where `supabase_sync.py` copies the log after each check. Create the tables once with `supabase/schema.sql`. They open only with your private dashboard key (`DASH_KEY`), so visit the dashboard once as `…/#key=<DASH_KEY>`. Status changes and notes you make there are saved in Supabase, in a separate column the sync never overwrites. Add `SUPABASE_URL` and `SUPABASE_SECRET_KEY` as repository secrets.
 
 This needs four more secrets here: `ANTHROPIC_API_KEY`, `GMAIL_USER`, `GMAIL_APP_PASSWORD` and `DISPATCH_TOKEN` (a fine-grained token with **Contents: read and write** on `job-applications` only, used to fetch the worker and save the log). The worker runs here rather than in the private repo because GitHub Actions is free for public repos.
 
